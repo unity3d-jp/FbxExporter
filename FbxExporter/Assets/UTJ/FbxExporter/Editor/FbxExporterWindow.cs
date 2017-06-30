@@ -71,8 +71,11 @@ namespace UTJ.FbxExporter
                 }
                 else
                 {
+                    string extension = "fbx";
+                    if (m_format == FbxExporter.Format.Obj) { extension = "obj"; }
+
                     string filename = objects[0].name;
-                    var path = EditorUtility.SaveFilePanel("Export .fbx file", "", filename, "fbx");
+                    var path = EditorUtility.SaveFilePanel("Export ." + extension + " file", "", filename, extension);
                     if (path != null && path.Length > 0)
                     {
                         DoExport(path, m_format, objects.ToArray());

@@ -79,8 +79,15 @@ namespace UTJ.FbxExporter
             }
         }
 
-        void AddMesh(Node node, Mesh mesh)
+        bool AddMesh(Node node, Mesh mesh)
         {
+            if (!mesh || mesh.vertexCount == 0) { return false; }
+            if (!mesh.isReadable)
+            {
+                Debug.LogWarning("Mesh " + mesh.name + " is not readable and be ignored.");
+                return false;
+            }
+
             Topology topology = Topology.Triangles;
 
             var indices = mesh.triangles;
@@ -91,38 +98,32 @@ namespace UTJ.FbxExporter
             var colors = mesh.colors;       if (colors.Length == 0) colors = null;
             fbxeAddMesh(m_ctx, node, points.Length, points, normals, tangents, uv, colors);
             fbxeAddMeshSubmesh(m_ctx, node, topology, indices.Length, indices, -1);
+
+            return true;
         }
 
-        void AddMesh(Node node, MeshRenderer mr)
+        bool AddMesh(Node node, MeshRenderer mr)
         {
             var mf = mr.gameObject.GetComponent<MeshFilter>();
-            if (mf)
-            {
-                var mesh = mf.sharedMesh;
-                if (mesh)
-                {
-                    AddMesh(node, mesh);
-                }
-            }
+            if (!mf)
+                return false;
+            return AddMesh(node, mf.sharedMesh);
         }
 
-        void AddSkinnedMesh(Node node, SkinnedMeshRenderer smr)
+        bool AddSkinnedMesh(Node node, SkinnedMeshRenderer smr)
         {
             var mesh = smr.sharedMesh;
-            if (mesh)
-            {
-                AddMesh(node, mesh);
+            if (!AddMesh(node, mesh))
+                return false;
 
-                var bones = smr.bones;
-                var bindposes = mesh.bindposes;
-                var boneNodes = new Node[bones.Length];
-                for (int bi = 0; bi < bones.Length; ++bi)
-                {
-                    boneNodes[bi] = FindOrCreateNodeTree(bones[bi], ProcessNode);
-                }
+            var bones = smr.bones;
+            var bindposes = mesh.bindposes;
+            var boneNodes = new Node[bones.Length];
+            for (int bi = 0; bi < bones.Length; ++bi)
+                boneNodes[bi] = FindOrCreateNodeTree(bones[bi], ProcessNode);
 
-                fbxeAddMeshSkin(m_ctx, node, mesh.boneWeights, boneNodes.Length, boneNodes, bindposes);
-            }
+            fbxeAddMeshSkin(m_ctx, node, mesh.boneWeights, boneNodes.Length, boneNodes, bindposes);
+            return true;
         }
         #endregion
     }
