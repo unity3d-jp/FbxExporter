@@ -14,7 +14,7 @@ public:
     virtual bool clear() = 0;
 
     virtual bool createScene(const char *name) = 0;
-    virtual bool write(const char *path, Format format = Format::FBXBinary) = 0;
+    virtual bool write(const char *path, Format format = Format::FbxBinary) = 0;
 
     virtual Node* getRootNode() = 0;
     virtual Node* findNodeByName(const char *name) = 0;

@@ -89,15 +89,17 @@ bool Context::write(const char *path, Format format)
         // search file format index
         const char *format_name = nullptr;
         switch (format) {
-        case Format::FBXAscii: format_name = "FBX ascii"; break;
-        case Format::FBXEncrypted: format_name = "FBX encrypted"; break;
+        case Format::FbxBinary: format_name = "FBX binary"; break;
+        case Format::FbxAscii: format_name = "FBX ascii"; break;
+        case Format::FbxEncrypted: format_name = "FBX encrypted"; break;
         case Format::Obj: format_name = "(*.obj)"; break;
-        default: format_name = "FBX binary"; break;
+        default: return false;
         }
 
         int n = m_manager->GetIOPluginRegistry()->GetWriterFormatCount();
         for (int i = 0; i < n; ++i) {
             auto desc = m_manager->GetIOPluginRegistry()->GetWriterFormatDescription(i);
+            printf("%s\n", desc);
             if (std::strstr(desc, format_name) != nullptr)
             {
                 file_format = i;
@@ -146,9 +148,8 @@ Node* Context::createNode(Node *parent, const char *name)
     auto node = FbxNode::Create(m_scene, name);
     if (!node) { return nullptr; }
 
-    if (parent) {
-        reinterpret_cast<FbxNode*>(parent)->AddChild(node);
-    }
+    reinterpret_cast<FbxNode*>(parent ? parent : getRootNode())->AddChild(node);
+
     return node;
 }
 

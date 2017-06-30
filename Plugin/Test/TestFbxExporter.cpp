@@ -169,14 +169,13 @@ void GenerateCylinderMeshWithSkinning(
 
 
 
-void TestFBXExportMesh()
+void TestFbxExportMesh()
 {
     fbxe::ExportOptions opt;
 
     auto ctx = fbxeCreateContext(&opt);
     fbxeCreateScene(ctx, "MeshExportTest");
-    auto root = fbxeGetRootNode(ctx);
-    auto parent = fbxeCreateNode(ctx, root, "Parent");
+    auto parent = fbxeCreateNode(ctx, nullptr, "Parent");
     fbxeSetTRS(ctx, parent, { 0.0f, 1.0f, 2.0f }, quatf::identity(), float3::one());
 
     {
@@ -186,27 +185,26 @@ void TestFBXExportMesh()
         std::vector<float2> uv;
         GenerateWaveMesh(counts, indices, points, uv, 1.0f, 0.25f, 128, 0.0f, false);
 
-        auto mesh = fbxeCreateNode(ctx, root, "Mesh");
+        auto mesh = fbxeCreateNode(ctx, parent, "Mesh");
         fbxeAddMesh(ctx, mesh, points.size(), points.data(), nullptr, nullptr, uv.data(), nullptr);
         fbxeAddMeshSubmesh(ctx, mesh, fbxe::Topology::Quads, indices.size(), indices.data(), -1);
     }
 
-    fbxeWrite(ctx, "mesh_binary.fbx", fbxe::Format::FBXBinary);
-    fbxeWrite(ctx, "mesh_ascii.fbx", fbxe::Format::FBXAscii);
-    fbxeWrite(ctx, "mesh_encrypted.fbx", fbxe::Format::FBXEncrypted);
+    fbxeWrite(ctx, "mesh_binary.fbx", fbxe::Format::FbxBinary);
+    fbxeWrite(ctx, "mesh_ascii.fbx", fbxe::Format::FbxAscii);
+    fbxeWrite(ctx, "mesh_encrypted.fbx", fbxe::Format::FbxEncrypted);
     fbxeWrite(ctx, "mesh_obj.obj", fbxe::Format::Obj);
     fbxeReleaseContext(ctx);
 }
-RegisterTestEntry(TestFBXExportMesh)
+RegisterTestEntry(TestFbxExportMesh)
 
-void TestFBXExportSkinnedMesh()
+void TestFbxExportSkinnedMesh()
 {
     fbxe::ExportOptions opt;
     opt.scale_factor = 2.0f;
 
     auto ctx = fbxeCreateContext(&opt);
     fbxeCreateScene(ctx, "SkinnedMeshExportTest");
-    auto root = fbxeGetRootNode(ctx);
 
     const int num_bones = 5;
     fbxe::Node *bones[num_bones];
@@ -215,7 +213,7 @@ void TestFBXExportSkinnedMesh()
     for (int i = 0; i < num_bones; ++i) {
         char name[128];
         sprintf(name, "Bone%d", i);
-        bones[i] = fbxeCreateNode(ctx, i == 0 ? root : bones[i - 1], name);
+        bones[i] = fbxeCreateNode(ctx, i == 0 ? nullptr : bones[i - 1], name);
         fbxeSetTRS(ctx, bones[i], { 0.0f, 1.0f, 0.0f }, quatf::identity(), float3::one());
 
         bindposes[i] = float4x4::identity();
@@ -229,13 +227,31 @@ void TestFBXExportSkinnedMesh()
     std::vector<Weights4> weights;
     GenerateCylinderMeshWithSkinning(counts, indices, points, uv, weights, 0.2f, 5.0f, 32, 128, false);
 
-    auto mesh = fbxeCreateNode(ctx, root, "SkinnedMesh");
+    auto mesh = fbxeCreateNode(ctx, nullptr, "SkinnedMesh");
     fbxeAddMesh(ctx, mesh, points.size(), points.data(), nullptr, nullptr, uv.data(), nullptr);
     fbxeAddMeshSubmesh(ctx, mesh, fbxe::Topology::Quads, indices.size(), indices.data(), -1);
     fbxeAddMeshSkin(ctx, mesh, weights.data(), num_bones, bones, bindposes);
 
-    fbxeWrite(ctx, "skinnedmesh_binary.fbx", fbxe::Format::FBXBinary);
-    fbxeWrite(ctx, "skinnedmesh_ascii.fbx", fbxe::Format::FBXAscii);
+    fbxeWrite(ctx, "skinnedmesh_binary.fbx", fbxe::Format::FbxBinary);
+    fbxeWrite(ctx, "skinnedmesh_ascii.fbx", fbxe::Format::FbxAscii);
     fbxeReleaseContext(ctx);
 }
-RegisterTestEntry(TestFBXExportSkinnedMesh)
+RegisterTestEntry(TestFbxExportSkinnedMesh)
+
+
+void TestFbxNameConflict()
+{
+    fbxe::ExportOptions opt;
+    auto ctx = fbxeCreateContext(&opt);
+    fbxeCreateScene(ctx, "NameSanitizeTest");
+
+    auto root = fbxeCreateNode(ctx, nullptr, "Root");
+    auto cnode1 = fbxeCreateNode(ctx, root, "Child");
+    auto cnode2 = fbxeCreateNode(ctx, root, "Child");
+    auto cnode11 = fbxeCreateNode(ctx, cnode2, "GrandChild $%&#?*@");
+    auto cnode12 = fbxeCreateNode(ctx, cnode2, "GrandChild");
+
+    fbxeWrite(ctx, "namesanitize_ascii.fbx", fbxe::Format::FbxAscii);
+    fbxeReleaseContext(ctx);
+}
+RegisterTestEntry(TestFbxNameConflict)

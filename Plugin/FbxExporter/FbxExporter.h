@@ -22,9 +22,9 @@ namespace fbxe {
 
     enum class Format
     {
-        FBXBinary,
-        FBXAscii,
-        FBXEncrypted,
+        FbxBinary,
+        FbxAscii,
+        FbxEncrypted,
         Obj,
     };
 
