@@ -77,6 +77,16 @@ bool Context::createScene(const char *name)
 
     clear();
     m_scene = FbxScene::Create(m_manager, name);
+    if (m_scene) {
+        auto& settings = m_scene->GetGlobalSettings();
+        switch (m_opt.system_unit) {
+        case SystemUnit::Millimeter: settings.SetSystemUnit(FbxSystemUnit::mm); break;
+        case SystemUnit::Centimeter: settings.SetSystemUnit(FbxSystemUnit::cm); break;
+        case SystemUnit::Decimeter: settings.SetSystemUnit(FbxSystemUnit::dm); break;
+        case SystemUnit::Meter: settings.SetSystemUnit(FbxSystemUnit::m); break;
+        case SystemUnit::Kilometer: settings.SetSystemUnit(FbxSystemUnit::km); break;
+        }
+    }
     return m_scene != nullptr;
 }
 

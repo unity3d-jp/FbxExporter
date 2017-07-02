@@ -17,12 +17,14 @@
 *.obj
 
 .vs/
+.idea/
 _out/
 _tmp/
 _build_*/
+cmake-build-*/
 external/
 Library/
 Temp/
 
-NormalPainter/*.csproj
-NormalPainter/*.sln
+FbxExporter/*.csproj
+FbxExporter/*.sln

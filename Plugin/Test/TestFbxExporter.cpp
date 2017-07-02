@@ -249,7 +249,7 @@ RegisterTestEntry(TestFbxExportSkinnedMesh)
 void TestFbxExportSkinnedMeshSegmented()
 {
     fbxe::ExportOptions opt;
-    opt.scale_factor = 2.0f;
+    opt.scale_factor = 1.0f;
 
     auto ctx = fbxeCreateContext(&opt);
     fbxeCreateScene(ctx, "SkinnedMeshExportTest");

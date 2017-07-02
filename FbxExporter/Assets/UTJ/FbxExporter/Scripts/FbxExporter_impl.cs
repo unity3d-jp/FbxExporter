@@ -26,6 +26,16 @@ namespace UTJ.FbxExporter
             FbxEncrypted,
             Obj,
         };
+
+        public enum SystemUnit
+        {
+            Millimeter,
+            Centimeter,
+            Decimeter,
+            Meter,
+            Kilometer,
+        };
+
         public enum Topology
         {
             Points,
@@ -39,6 +49,7 @@ namespace UTJ.FbxExporter
             public bool flip_handedness;
             public bool flip_faces;
             public float scale_factor;
+            public SystemUnit system_unit;
 
             public static ExportOptions defaultValue
             {
@@ -48,6 +59,7 @@ namespace UTJ.FbxExporter
                         flip_handedness = true,
                         flip_faces = true,
                         scale_factor = 1.0f,
+                        system_unit = SystemUnit.Meter,
                     };
                 }
             }

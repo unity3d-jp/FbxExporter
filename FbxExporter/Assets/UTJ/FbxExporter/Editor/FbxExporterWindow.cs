@@ -46,6 +46,7 @@ namespace UTJ.FbxExporter
             m_opt.flip_handedness = EditorGUILayout.Toggle("Flip Handedness", m_opt.flip_handedness);
             m_opt.flip_faces = EditorGUILayout.Toggle("Flip Faces", m_opt.flip_faces);
             m_opt.scale_factor = EditorGUILayout.FloatField("Scale Factor", m_opt.scale_factor);
+            m_opt.system_unit = (FbxExporter.SystemUnit)EditorGUILayout.EnumPopup("System Unit", m_opt.system_unit);
 
             EditorGUILayout.Space();
 

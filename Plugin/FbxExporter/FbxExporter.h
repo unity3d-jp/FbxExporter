@@ -20,6 +20,15 @@ namespace fbxe {
         Quads,
     };
 
+    enum class SystemUnit
+    {
+        Millimeter,
+        Centimeter,
+        Decimeter,
+        Meter,
+        Kilometer,
+    };
+
     enum class Format
     {
         FbxBinary,
@@ -33,6 +42,7 @@ namespace fbxe {
         int flip_handedness = 0;
         int flip_faces = 0;
         float scale_factor = 1.0f;
+        SystemUnit system_unit = SystemUnit::Meter;
     };
 
 } // namespace fbxe
