@@ -86,6 +86,7 @@ void GenerateCylinderMesh(
     std::vector<float2> &uv,
     float radius, float height,
     int cseg, int hseg,
+    bool wave = false,
     bool triangulate = false)
 {
     const int num_vertices = cseg * hseg;
@@ -98,7 +99,12 @@ void GenerateCylinderMesh(
         for (int ic = 0; ic < cseg; ++ic) {
             int i = cseg * ih + ic;
             float ang = ((360.0f / cseg) * ic) * Deg2Rad;
-            float3 pos{ std::cos(ang) * radius, y, std::sin(ang) * radius };
+            float r = radius;
+            if (wave) {
+                r = radius * (std::sin(y * 2000.0f * Deg2Rad) * 0.1 + 0.9f);
+            }
+
+            float3 pos{ std::cos(ang) * r, y, std::sin(ang) * r };
             float2 t{ float(ic) / float(cseg - 1), float(ih) / float(hseg - 1), };
 
             points[i] = pos;
@@ -152,16 +158,17 @@ void GenerateCylinderMeshWithSkinning(
     std::vector<Weights4> &weights,
     float radius, float height,
     int cseg, int hseg,
+    bool wave = false,
     bool triangulate = false)
 {
-    GenerateCylinderMesh(counts, indices, points, uv, radius, height, cseg, hseg);
+    GenerateCylinderMesh(counts, indices, points, uv, radius, height, cseg, hseg, wave, triangulate);
 
     size_t n = points.size();
     weights.resize(n);
     Weights4 w;
     for (size_t i = 0; i < n; ++i) {
         const auto& p = points[i];
-        w.indices[0] = std::min<int>((int)p.y, 4);
+        w.indices[0] = (int)p.y;
         w.weights[0] = 1.0f;
         weights[i] = w;
     }
@@ -206,7 +213,7 @@ void TestFbxExportSkinnedMesh()
     auto ctx = fbxeCreateContext(&opt);
     fbxeCreateScene(ctx, "SkinnedMeshExportTest");
 
-    const int num_bones = 5;
+    const int num_bones = 6;
     fbxe::Node *bones[num_bones];
     float4x4 bindposes[num_bones];
 
@@ -214,7 +221,7 @@ void TestFbxExportSkinnedMesh()
         char name[128];
         sprintf(name, "Bone%d", i);
         bones[i] = fbxeCreateNode(ctx, i == 0 ? nullptr : bones[i - 1], name);
-        fbxeSetTRS(ctx, bones[i], { 0.0f, 1.0f, 0.0f }, quatf::identity(), float3::one());
+        fbxeSetTRS(ctx, bones[i], { 0.0f, i == 0 ? 0.0f : 1.0f, 0.0f }, quatf::identity(), float3::one());
 
         bindposes[i] = float4x4::identity();
         bindposes[i][3].y = -1.0f * i;
@@ -232,11 +239,69 @@ void TestFbxExportSkinnedMesh()
     fbxeAddMeshSubmesh(ctx, mesh, fbxe::Topology::Quads, indices.size(), indices.data(), -1);
     fbxeAddMeshSkin(ctx, mesh, weights.data(), num_bones, bones, bindposes);
 
-    fbxeWrite(ctx, "skinnedmesh_binary.fbx", fbxe::Format::FbxBinary);
-    fbxeWrite(ctx, "skinnedmesh_ascii.fbx", fbxe::Format::FbxAscii);
+    fbxeWrite(ctx, "SkinnedMesh_binary.fbx", fbxe::Format::FbxBinary);
+    fbxeWrite(ctx, "SkinnedMesh_ascii.fbx", fbxe::Format::FbxAscii);
     fbxeReleaseContext(ctx);
 }
 RegisterTestEntry(TestFbxExportSkinnedMesh)
+
+
+void TestFbxExportSkinnedMeshSegmented()
+{
+    fbxe::ExportOptions opt;
+    opt.scale_factor = 2.0f;
+
+    auto ctx = fbxeCreateContext(&opt);
+    fbxeCreateScene(ctx, "SkinnedMeshExportTest");
+
+    const int num_bones = 6;
+    fbxe::Node *bones[num_bones];
+    float4x4 bindposes[num_bones];
+
+    for (int i = 0; i < num_bones; ++i) {
+        char name[128];
+        sprintf(name, "Bone%d", i);
+        bones[i] = fbxeCreateNode(ctx, i == 0 ? nullptr : bones[i - 1], name);
+        fbxeSetTRS(ctx, bones[i], { 0.0f, i == 0 ? 0.0f : 1.0f, 0.0f }, quatf::identity(), float3::one());
+
+        bindposes[i] = float4x4::identity();
+        bindposes[i][3].y = -1.0f * i;
+    }
+
+    std::vector<int> counts;
+    std::vector<int> indices;
+    std::vector<float3> points;
+    std::vector<float2> uv;
+    std::vector<Weights4> weights;
+
+    const int cseg = 32;
+    const int hseg = 121;
+    const int num_faces = cseg * (hseg - 1);
+    GenerateCylinderMeshWithSkinning(counts, indices, points, uv, weights, 0.2f, 5.0f, cseg, hseg, true);
+
+    const int num_segments = 3;
+    const int num_indices_in_segment = (num_faces / num_segments) * 4;
+    for (int i = 0; i < num_segments; ++i) {
+
+        std::vector<int> seg_indices;
+        seg_indices.assign(
+            indices.begin() + num_indices_in_segment * i,
+            indices.begin() + num_indices_in_segment * (i + 1));
+
+        char name[128];
+        sprintf(name, "SkinnedMesh_Seg%d", i);
+
+        auto mesh = fbxeCreateNode(ctx, nullptr, name);
+        fbxeAddMesh(ctx, mesh, points.size(), points.data(), nullptr, nullptr, uv.data(), nullptr);
+        fbxeAddMeshSubmesh(ctx, mesh, fbxe::Topology::Quads, seg_indices.size(), seg_indices.data(), -1);
+        fbxeAddMeshSkin(ctx, mesh, weights.data(), num_bones, bones, bindposes);
+    }
+
+    fbxeWrite(ctx, "SkinnedMeshSegmented_binary.fbx", fbxe::Format::FbxBinary);
+    fbxeWrite(ctx, "SkinnedMeshSegmented_ascii.fbx", fbxe::Format::FbxAscii);
+    fbxeReleaseContext(ctx);
+}
+RegisterTestEntry(TestFbxExportSkinnedMeshSegmented)
 
 
 void TestFbxNameConflict()

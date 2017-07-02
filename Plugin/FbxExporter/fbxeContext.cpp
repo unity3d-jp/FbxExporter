@@ -99,7 +99,6 @@ bool Context::write(const char *path, Format format)
         int n = m_manager->GetIOPluginRegistry()->GetWriterFormatCount();
         for (int i = 0; i < n; ++i) {
             auto desc = m_manager->GetIOPluginRegistry()->GetWriterFormatDescription(i);
-            printf("%s\n", desc);
             if (std::strstr(desc, format_name) != nullptr)
             {
                 file_format = i;
