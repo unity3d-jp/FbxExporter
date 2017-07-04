@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "Test.h"
+
+#define fbxeImpl
 #include "FbxExporter/FbxExporter.h"
 using namespace mu;
 

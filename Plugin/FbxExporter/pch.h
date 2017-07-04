@@ -16,3 +16,5 @@
 
 #include <fbxsdk.h>
 #include "MeshUtils/MeshUtils.h"
+
+#define fbxeImpl

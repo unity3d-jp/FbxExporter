@@ -4,9 +4,6 @@
 
 namespace fbxe {
 
-using namespace mu;
-
-
 class IContext
 {
 public:
