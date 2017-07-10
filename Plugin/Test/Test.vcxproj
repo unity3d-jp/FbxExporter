@@ -17,7 +17,6 @@
     </ClCompile>
     <ClCompile Include="Test.cpp" />
     <ClCompile Include="TestFbxExporter.cpp" />
-    <ClCompile Include="TestMeshUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FbxExporterCore.vcxproj">
@@ -51,8 +50,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>$(SolutionDir);$(SolutionDir)External\Poco\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)External\Poco\lib64;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir);$(SolutionDir)External;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)External\libs\win64;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)_out\$(Platform)_$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)_tmp\$(ProjectName)_$(Platform)_$(Configuration)\</IntDir>
   </PropertyGroup>
@@ -65,7 +64,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EnableFbxExport;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
@@ -84,7 +83,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/Zo %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EnableFbxExport;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Optimization>Full</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>

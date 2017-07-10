@@ -12,7 +12,7 @@ namespace mu {
 
 
 
-bool GenerateNormals(
+bool GenerateNormalsPoly(
     IArray<float3> dst, const IArray<float3> points,
     const IArray<int> counts, const IArray<int> offsets, const IArray<int> indices)
 {
@@ -117,7 +117,7 @@ struct TSpaceContext
     }
 };
 
-bool GenerateTangents(
+bool GenerateTangentsPoly(
     IArray<float4> dst, const IArray<float3> points, const IArray<float3> normals, const IArray<float2> uv,
     const IArray<int> counts, const IArray<int> offsets, const IArray<int> indices)
 {
@@ -150,7 +150,7 @@ bool GenerateWeightsN(RawVector<Weights<N>>& dst, IArray<int> bone_indices, IArr
     }
 
     int num_weightsN = (int)bone_indices.size() / bones_per_vertex;
-    dst.resize(num_weightsN);
+    dst.resize_discard(num_weightsN);
 
     if (bones_per_vertex <= N) {
         dst.zeroclear();
@@ -203,14 +203,16 @@ template bool GenerateWeightsN(RawVector<Weights<8>>& dst, IArray<int> bone_indi
 
 void ConnectionData::clear()
 {
-    counts.clear();
-    offsets.clear();
-    faces.clear();
-    indices.clear();
+    v2f_counts.clear();
+    v2f_offsets.clear();
+    v2f_faces.clear();
+    v2f_indices.clear();
+
     weld_map.clear();
+    weld_counts.clear();
+    weld_offsets.clear();
+    weld_indices.clear();
 }
-
-
 
 void ConnectionData::buildConnection(
     const IArray<int>& indices_, int ngon_, const IArray<float3>& vertices_, bool welding)

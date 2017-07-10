@@ -3,7 +3,6 @@
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="TestFbxExporter.cpp" />
-    <ClCompile Include="TestMeshUtils.cpp" />
     <ClCompile Include="Test.cpp" />
   </ItemGroup>
   <ItemGroup>
