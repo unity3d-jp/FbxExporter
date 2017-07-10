@@ -19,6 +19,7 @@ find_library(FBX_LIBRARY
 mark_as_advanced(FBX_INCLUDE_DIR)
 mark_as_advanced(FBX_LIBRARY)
 
+include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args("FBX"
     DEFAULT_MSG
     FBX_LIBRARY
