@@ -1,10 +1,14 @@
 find_package(FBX QUIET)
 list(APPEND EXTERNAL_LIBS ${FBX_LIBRARY} dl)
+if(APPLE)
+    find_library(CORE_FOUNDATION_LIBRARY CoreFoundation)
+    mark_as_advanced(FORCE CORE_FOUNDATION_LIBRARY)
+    list(APPEND EXTERNAL_LIBS ${CORE_FOUNDATION_LIBRARY})
+endif()
 
-file(GLOB FE_SOURCES *.cpp)
-file(GLOB FE_HEADERS *.h)
-set(FE_PLUGINS_DIR "${CMAKE_SOURCE_DIR}/../FbxExporter/Assets/UTJ/FbxExporter/Plugins/x86_64")
-add_plugin(FbxExporterCore SOURCES ${FE_SOURCES} ${FE_HEADERS} PLUGINS_DIR ${FE_PLUGINS_DIR})
+file(GLOB sources *.cpp *.h)
+set(plugins_dir "${CMAKE_SOURCE_DIR}/../FbxExporter/Assets/UTJ/FbxExporter/Plugins/x86_64")
+add_plugin(FbxExporterCore SOURCES ${sources} PLUGINS_DIR ${plugins_dir})
 
 add_dependencies(FbxExporterCore MeshUtils)
 target_include_directories(FbxExporterCore PRIVATE ${FBX_INCLUDE_DIR})
