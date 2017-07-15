@@ -64,6 +64,8 @@ namespace UTJ.FbxExporter
                         objects.Add(o.gameObject);
                     foreach (var o in GameObject.FindObjectsOfType<SkinnedMeshRenderer>())
                         objects.Add(o.gameObject);
+                    foreach (var o in GameObject.FindObjectsOfType<Terrain>())
+                        objects.Add(o.gameObject);
                 }
 
                 if (objects.Count == 0)

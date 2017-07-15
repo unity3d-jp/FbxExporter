@@ -52,8 +52,11 @@ namespace UTJ.FbxExporter
         {
             var mr = trans.GetComponent<MeshRenderer>();
             var smr = trans.GetComponent<SkinnedMeshRenderer>();
+            var terrain = trans.GetComponent<Terrain>();
 
-            if(smr)
+            if (terrain)
+                AddTerrain(node, terrain);
+            else if (smr)
                 AddSkinnedMesh(node, smr);
             else if (mr)
                 AddMesh(node, mr);
@@ -123,6 +126,29 @@ namespace UTJ.FbxExporter
                 boneNodes[bi] = FindOrCreateNodeTree(bones[bi], ProcessNode);
 
             fbxeAddMeshSkin(m_ctx, node, mesh.boneWeights, boneNodes.Length, boneNodes, bindposes);
+            return true;
+        }
+
+        bool AddTerrain(Node node, Terrain terrain)
+        {
+            var tdata = terrain.terrainData;
+            var w = tdata.heightmapWidth;
+            var h = tdata.heightmapHeight;
+            var heightmap = tdata.GetHeights(0, 0, w, h);
+
+            int vertexCount = w * h;
+            int indexCount = (w - 1) * (h - 1) * 2 * 3;
+            var vertices = new Vector3[vertexCount];
+            var normals = new Vector3[vertexCount];
+            var uv = new Vector2[vertexCount];
+            var indices = new int[indexCount];
+            fbxeGenerateTerrainMesh(heightmap, w, h, tdata.size,
+                vertices, normals, uv, indices);
+
+            Topology topology = Topology.Triangles;
+            fbxeAddMesh(m_ctx, node, vertices.Length, vertices, normals, null, uv, null);
+            fbxeAddMeshSubmesh(m_ctx, node, topology, indices.Length, indices, -1);
+
             return true;
         }
         #endregion
