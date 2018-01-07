@@ -69,10 +69,11 @@ fbxeAPI void fbxeAddMeshSkin(fbxe::IContext *ctx, fbxe::Node *node, Weights4 wei
     ctx->addMeshSkin(node, weights, num_bones, bones, bindposes);
 }
 
-fbxeAPI void fbxeAddMeshBlendShape(fbxe::IContext *ctx, fbxe::Node *node, const char *name, float weight, const fbxe::float3 points[], const fbxe::float3 normals[], const fbxe::float3 tangents[])
+fbxeAPI void fbxeAddMeshBlendShape(fbxe::IContext *ctx, fbxe::Node *node, const char *name, float weight,
+    const fbxe::float3 delta_points[], const fbxe::float3 delta_normals[], const fbxe::float3 delta_tangents[])
 {
     if (!ctx) { return; }
-    ctx->addMeshBlendShape(node, name, weight, points, normals, tangents);
+    ctx->addMeshBlendShape(node, name, weight, delta_points, delta_normals, delta_tangents);
 }
 
 

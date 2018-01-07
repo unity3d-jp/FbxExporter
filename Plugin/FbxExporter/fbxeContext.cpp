@@ -28,7 +28,8 @@ public:
         const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[]) override;
     void addMeshSubmesh(Node *node, Topology topology, int num_indices, const int indices[], int material) override;
     void addMeshSkin(Node *node, Weights4 weights[], int num_bones, Node *bones[], float4x4 bindposes[]) override;
-    void addMeshBlendShape(Node *node, const char *name, float weight, const float3 points[], const float3 normals[], const float3 tangents[]) override;
+    void addMeshBlendShape(Node *node, const char *name, float weight,
+        const float3 delta_points[], const float3 delta_normals[], const float3 delta_tangents[]) override;
 
 private:
     ExportOptions m_opt;
@@ -341,7 +342,8 @@ void Context::addMeshSkin(Node *node_, Weights4 weights[], int num_bones, Node *
     }
 }
 
-void Context::addMeshBlendShape(Node *node_, const char *name, float weight, const float3 points[], const float3 normals[], const float3 tangents[])
+void Context::addMeshBlendShape(Node *node_, const char *name, float weight,
+    const float3 delta_points[], const float3 delta_normals[], const float3 delta_tangents[])
 {
     if (!node_) { return; }
 
@@ -349,12 +351,14 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight, con
     auto mesh = node->GetMesh();
     if (!mesh) { return; }
 
+    // find or create blendshape deformer
     auto *blendshape = (FbxBlendShape*)mesh->GetDeformer(0, FbxDeformer::EDeformerType::eBlendShape);
     if (!blendshape) {
         blendshape = FbxBlendShape::Create(m_scene, "");
         mesh->AddDeformer(blendshape);
     }
 
+    // find or create blendshape channel
     FbxBlendShapeChannel *channel = nullptr;
     {
         int num_channels = blendshape->GetBlendShapeChannelCount();
@@ -372,16 +376,18 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight, con
         blendshape->AddBlendShapeChannel(channel);
     }
 
+    // create and add shape
     auto *shape = FbxShape::Create(m_scene, "");
     int num_vertices = mesh->GetControlPointsCount();
+
     {
         // set points
         shape->InitControlPoints(num_vertices);
         auto base = mesh->GetControlPoints();
         auto dst = shape->GetControlPoints();
-        if (points) {
+        if (delta_points) {
             for (int vi = 0; vi < num_vertices; ++vi) {
-                float3 delta = points[vi] * m_opt.scale_factor;
+                float3 delta = delta_points[vi] * m_opt.scale_factor;
                 if (m_opt.flip_handedness) { delta = swap_handedness(delta); }
                 dst[vi] = ToP4(ToFloat3(base[vi]) + delta);
             }
@@ -403,13 +409,15 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight, con
 
         auto base = (const FbxVector4*)src_da.GetLocked(FbxLayerElementArray::eReadLock);
         auto dst = (FbxVector4*)dst_da.GetLocked();
-        if (normals) {
+        if (delta_normals) {
             for (int vi = 0; vi < num_vertices; ++vi) {
-                float3 delta = normals[vi];
+                float3 delta = delta_normals[vi];
                 if (m_opt.flip_handedness) { delta = swap_handedness(delta); }
-                auto t = ToFloat3(base[vi]);
+
+                auto& td = base[vi];
+                auto t = ToFloat3(td);
                 t = normalize(t + delta);
-                (double3&)dst[vi] = double3{ t[0], t[1], t[2] };
+                dst[vi] = { t[0], t[1], t[2], td[3] };
             }
         }
         else {
@@ -431,13 +439,15 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight, con
 
         auto base = (const FbxVector4*)src_da.GetLocked(FbxLayerElementArray::eReadLock);
         auto dst = (FbxVector4*)dst_da.GetLocked();
-        if (tangents) {
+        if (delta_tangents) {
             for (int vi = 0; vi < num_vertices; ++vi) {
-                float3 delta = tangents[vi];
+                float3 delta = delta_tangents[vi];
                 if (m_opt.flip_handedness) { delta = swap_handedness(delta); }
-                auto t = ToFloat3(base[vi]);
+
+                auto& td = base[vi];
+                auto t = ToFloat3(td);
                 t = normalize(t + delta);
-                (double3&)dst[vi] = double3{ t[0], t[1], t[2] };
+                dst[vi] = { t[0], t[1], t[2], td[3] };
             }
         }
         else {

@@ -80,4 +80,5 @@ fbxeAPI void        fbxeAddMesh(fbxe::IContext *ctx, fbxe::Node *node, int num_v
     const fbxe::float2 uv[], const fbxe::float4 colors[]);
 fbxeAPI void        fbxeAddMeshSubmesh(fbxe::IContext *ctx, fbxe::Node *node, fbxe::Topology topology, int num_indices, const int indices[], int material);
 fbxeAPI void        fbxeAddMeshSkin(fbxe::IContext *ctx, fbxe::Node *node, fbxe::Weights4 weights[], int num_bones, fbxe::Node *bones[], fbxe::float4x4 bindposes[]);
-fbxeAPI void        fbxeAddMeshBlendShape(fbxe::IContext *ctx, fbxe::Node *node, const char *name, float weight, const fbxe::float3 points[], const fbxe::float3 normals[], const fbxe::float3 tangents[]);
+fbxeAPI void        fbxeAddMeshBlendShape(fbxe::IContext *ctx, fbxe::Node *node, const char *name, float weight,
+    const fbxe::float3 delta_points[], const fbxe::float3 delta_normals[], const fbxe::float3 delta_tangents[]);

@@ -93,21 +93,21 @@ namespace UTJ.FbxExporter
 
             Topology topology = Topology.Triangles;
 
-            var indices = mesh.triangles;
-            var points = mesh.vertices;
-            var normals = mesh.normals;     if (normals.Length == 0) normals = null;
-            var tangents = mesh.tangents;   if (tangents.Length == 0) tangents = null;
-            var uv = mesh.uv;               if (uv.Length == 0) uv = null;
-            var colors = mesh.colors;       if (colors.Length == 0) colors = null;
+            var indices = new PinnedArray<int>(mesh.triangles);
+            var points = new PinnedArray<Vector3>(mesh.vertices);
+            var normals = new PinnedArray<Vector3>(mesh.normals); if (normals.Length == 0) normals = null;
+            var tangents = new PinnedArray<Vector4>(mesh.tangents); if (tangents.Length == 0) tangents = null;
+            var uv = new PinnedArray<Vector2>(mesh.uv); if (uv.Length == 0) uv = null;
+            var colors = new PinnedArray<Color>(mesh.colors); if (colors.Length == 0) colors = null;
             fbxeAddMesh(m_ctx, node, points.Length, points, normals, tangents, uv, colors);
             fbxeAddMeshSubmesh(m_ctx, node, topology, indices.Length, indices, -1);
 
             int blendshapeCount = mesh.blendShapeCount;
             if (blendshapeCount > 0)
             {
-                var deltaVertices = new Vector3[mesh.vertexCount];
-                var deltaNormals = new Vector3[mesh.vertexCount];
-                var deltaTangents = new Vector3[mesh.vertexCount];
+                var deltaVertices = new PinnedArray<Vector3>(mesh.vertexCount);
+                var deltaNormals = new PinnedArray<Vector3>(mesh.vertexCount);
+                var deltaTangents = new PinnedArray<Vector3>(mesh.vertexCount);
                 for (int bi = 0; bi < blendshapeCount; ++bi)
                 {
                     string name = mesh.GetBlendShapeName(bi);
@@ -139,12 +139,12 @@ namespace UTJ.FbxExporter
                 return false;
 
             var bones = smr.bones;
-            var bindposes = mesh.bindposes;
-            var boneNodes = new Node[bones.Length];
+            var boneNodes = new PinnedArray<Node>(bones.Length);
             for (int bi = 0; bi < bones.Length; ++bi)
                 boneNodes[bi] = FindOrCreateNodeTree(bones[bi], ProcessNode);
-
-            fbxeAddMeshSkin(m_ctx, node, mesh.boneWeights, boneNodes.Length, boneNodes, bindposes);
+            var boneWeights = new PinnedArray<BoneWeight>(mesh.boneWeights);
+            var bindposes = new PinnedArray<Matrix4x4>(mesh.bindposes);
+            fbxeAddMeshSkin(m_ctx, node, boneWeights, boneNodes.Length, boneNodes, bindposes);
             return true;
         }
 
@@ -157,15 +157,15 @@ namespace UTJ.FbxExporter
 
             int vertexCount = w * h;
             int indexCount = (w - 1) * (h - 1) * 2 * 3;
-            var vertices = new Vector3[vertexCount];
-            var normals = new Vector3[vertexCount];
-            var uv = new Vector2[vertexCount];
-            var indices = new int[indexCount];
+            var vertices = new PinnedArray<Vector3>(vertexCount);
+            var normals = new PinnedArray<Vector3>(vertexCount);
+            var uv = new PinnedArray<Vector2>(vertexCount);
+            var indices = new PinnedArray<int>(indexCount);
             fbxeGenerateTerrainMesh(heightmap, w, h, tdata.size,
                 vertices, normals, uv, indices);
 
             Topology topology = Topology.Triangles;
-            fbxeAddMesh(m_ctx, node, vertices.Length, vertices, normals, null, uv, null);
+            fbxeAddMesh(m_ctx, node, vertices.Length, vertices, normals, IntPtr.Zero, uv, IntPtr.Zero);
             fbxeAddMeshSubmesh(m_ctx, node, topology, indices.Length, indices, -1);
 
             return true;

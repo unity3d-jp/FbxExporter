@@ -79,17 +79,17 @@ namespace UTJ.FbxExporter
         [DllImport("FbxExporterCore")] static extern Node fbxeCreateNode(Context ctx, Node parent, string name);
         [DllImport("FbxExporterCore")] static extern void fbxeSetTRS(Context ctx, Node node, Vector3 t, Quaternion r, Vector3 s);
         [DllImport("FbxExporterCore")] static extern void fbxeAddMesh(Context ctx, Node node,
-            int num_vertices, Vector3[] points, Vector3[] normals, Vector4[] tangents, Vector2[] uv, Color[] colors);
+            int num_vertices, IntPtr points, IntPtr normals, IntPtr tangents, IntPtr uv, IntPtr colors);
         [DllImport("FbxExporterCore")] static extern void fbxeAddMeshSubmesh(Context ctx, Node node,
-            Topology topology, int num_indices, int[] indices, int material);
+            Topology topology, int num_indices, IntPtr indices, int material);
         [DllImport("FbxExporterCore")] static extern void fbxeAddMeshSkin(Context ctx, Node node,
-            BoneWeight[] weights, int num_bones, Node[] bones, Matrix4x4[] bindposes);
+            IntPtr weights, int num_bones, IntPtr bones, IntPtr bindposes);
         [DllImport("FbxExporterCore")] static extern void fbxeAddMeshBlendShape(Context ctx, Node node,
-            string name, float weight, Vector3[] deltaPoints, Vector3[] deltaNormals, Vector3[] deltaTangents);
+            string name, float weight, IntPtr deltaPoints, IntPtr deltaNormals, IntPtr deltaTangents);
 
         [DllImport("FbxExporterCore")] static extern void fbxeGenerateTerrainMesh(
             float[,] heightmap, int width, int height, Vector3 size,
-            Vector3[] dst_vertices, Vector3[] dst_normals, Vector2[] dst_uv, int[] dst_indices);
+            IntPtr dst_vertices, IntPtr dst_normals, IntPtr dst_uv, IntPtr dst_indices);
 
     }
 
