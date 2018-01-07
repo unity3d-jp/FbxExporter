@@ -364,7 +364,8 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight,
         int num_channels = blendshape->GetBlendShapeChannelCount();
         for (int i = 0; i < num_channels; ++i) {
             auto c = blendshape->GetBlendShapeChannel(i);
-            if (strcmp(c->GetName(), name) == 0) {
+            auto cname = c->GetName();
+            if (strcmp(cname, name) == 0) {
                 channel = c;
                 break;
             }
@@ -372,14 +373,14 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight,
     }
     if (!channel) {
         channel = FbxBlendShapeChannel::Create(m_scene, name);
-        channel->SetBlendShapeDeformer(blendshape);
         blendshape->AddBlendShapeChannel(channel);
     }
 
     // create and add shape
     auto *shape = FbxShape::Create(m_scene, "");
-    int num_vertices = mesh->GetControlPointsCount();
+    channel->AddTargetShape(shape, weight);
 
+    int num_vertices = mesh->GetControlPointsCount();
     {
         // set points
         shape->InitControlPoints(num_vertices);
@@ -458,6 +459,5 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight,
         dst_da.Release((void**)&dst);
         src_da.Release((void**)&dst);
     }
-    channel->AddTargetShape(shape, weight);
 }
 } // namespace fbxe
