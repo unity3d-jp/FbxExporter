@@ -2,6 +2,8 @@
 
 namespace fbxe {
 
+inline float3 ToFloat3(const FbxDouble4& v) { return {(float)v[0], (float)v[1], (float)v[2] }; }
+
 inline FbxVector2 ToV2(float2 v) { return { v.x, v.y }; }
 inline FbxDouble3 ToP3(float3 v) { return { v.x, v.y, v.z }; }
 inline FbxDouble4 ToP4(float3 v) { return { v.x, v.y, v.z, 1.0f }; }

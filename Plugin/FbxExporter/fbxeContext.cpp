@@ -312,7 +312,7 @@ void Context::addMeshSkin(Node *node_, Weights4 weights[], int num_bones, Node *
     if (!mesh) { return; }
 
     auto skin = FbxSkin::Create(m_scene, "");
-    skin->SetGeometry(mesh);
+    mesh->AddDeformer(skin);
 
     RawVector<int> dindices;
     RawVector<double> dweights;
@@ -352,7 +352,7 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight, con
     auto *blendshape = (FbxBlendShape*)mesh->GetDeformer(0, FbxDeformer::EDeformerType::eBlendShape);
     if (!blendshape) {
         blendshape = FbxBlendShape::Create(m_scene, "");
-        blendshape->SetGeometry(mesh);
+        mesh->AddDeformer(blendshape);
     }
 
     FbxBlendShapeChannel *channel = nullptr;
@@ -373,10 +373,7 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight, con
     }
 
     auto *shape = FbxShape::Create(m_scene, "");
-    channel->AddTargetShape(shape, weight);
-
     int num_vertices = mesh->GetControlPointsCount();
-
     {
         // set points
         shape->InitControlPoints(num_vertices);
@@ -386,7 +383,7 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight, con
             for (int vi = 0; vi < num_vertices; ++vi) {
                 float3 delta = points[vi] * m_opt.scale_factor;
                 if (m_opt.flip_handedness) { delta = swap_handedness(delta); }
-                dst[vi] = ToP4((const float3&)base[vi] + delta);
+                dst[vi] = ToP4(ToFloat3(base[vi]) + delta);
             }
         }
         else {
@@ -410,9 +407,9 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight, con
             for (int vi = 0; vi < num_vertices; ++vi) {
                 float3 delta = normals[vi];
                 if (m_opt.flip_handedness) { delta = swap_handedness(delta); }
-                auto tmp = base[vi];
-                (float3&)tmp = normalize((const float3&)tmp + delta);
-                dst[vi] = tmp;
+                auto t = ToFloat3(base[vi]);
+                t = normalize(t + delta);
+                (double3&)dst[vi] = double3{ t[0], t[1], t[2] };
             }
         }
         else {
@@ -438,9 +435,9 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight, con
             for (int vi = 0; vi < num_vertices; ++vi) {
                 float3 delta = tangents[vi];
                 if (m_opt.flip_handedness) { delta = swap_handedness(delta); }
-                auto tmp = base[vi];
-                (float3&)tmp = normalize((const float3&)tmp + delta);
-                dst[vi] = tmp;
+                auto t = ToFloat3(base[vi]);
+                t = normalize(t + delta);
+                (double3&)dst[vi] = double3{ t[0], t[1], t[2] };
             }
         }
         else {
@@ -451,5 +448,6 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight, con
         dst_da.Release((void**)&dst);
         src_da.Release((void**)&dst);
     }
+    channel->AddTargetShape(shape, weight);
 }
 } // namespace fbxe
