@@ -9,7 +9,7 @@
 - Supported platforms are Windows (64 bit) and Mac (64 bit)
   - Also confirmed to work on Linux, but you need to build plugin from source.
 - The only feature currently supported is exporting meshes. Animations, textures or any others will not be exported.
-  - MeshRenderer, SkinnedMeshRenderer and Terrain component will be exported as meshes. Skinning is supported, Blend shape is not supported.
+  - MeshRenderer, SkinnedMeshRenderer and Terrain component will be exported as meshes. Skinning and blend shape are supported.
 
 ## License
 [MIT](LICENSE.txt)

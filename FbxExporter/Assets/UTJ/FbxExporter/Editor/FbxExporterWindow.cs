@@ -1,7 +1,9 @@
-
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 
 
 namespace UTJ.FbxExporter
@@ -23,6 +25,7 @@ namespace UTJ.FbxExporter
         }
 
         Scope m_scope = Scope.Selected;
+        bool m_includeChildren = true;
         FbxExporter.Format m_format = FbxExporter.Format.FbxBinary;
         FbxExporter.ExportOptions m_opt = FbxExporter.ExportOptions.defaultValue;
 
@@ -42,6 +45,13 @@ namespace UTJ.FbxExporter
         void OnGUI()
         {
             m_scope = (Scope)EditorGUILayout.EnumPopup("Scope", m_scope);
+            if(m_scope == Scope.Selected)
+            {
+                EditorGUI.indentLevel++;
+                m_includeChildren = EditorGUILayout.Toggle("Include Children", m_includeChildren);
+                EditorGUI.indentLevel--;
+            }
+
             m_format = (FbxExporter.Format)EditorGUILayout.EnumPopup("Format", m_format);
             m_opt.flip_handedness = EditorGUILayout.Toggle("Flip Handedness", m_opt.flip_handedness);
             m_opt.flip_faces = EditorGUILayout.Toggle("Flip Faces", m_opt.flip_faces);
@@ -52,11 +62,24 @@ namespace UTJ.FbxExporter
 
             if (GUILayout.Button("Export"))
             {
-                var objects = new List<GameObject>();
+                var objects = new HashSet<GameObject>();
 
                 if (m_scope == Scope.Selected)
                 {
-                    objects = new List<GameObject>(Selection.gameObjects);
+                    foreach (var o in Selection.gameObjects)
+                        objects.Add(o);
+                    if (m_includeChildren)
+                    {
+                        foreach (var o in Selection.gameObjects)
+                        {
+                            foreach (var c in o.GetComponentsInChildren<MeshRenderer>())
+                                objects.Add(c.gameObject);
+                            foreach (var c in o.GetComponentsInChildren<SkinnedMeshRenderer>())
+                                objects.Add(c.gameObject);
+                            foreach (var c in o.GetComponentsInChildren<Terrain>())
+                                objects.Add(c.gameObject);
+                        }
+                    }
                 }
                 else
                 {
@@ -77,14 +100,30 @@ namespace UTJ.FbxExporter
                     string extension = "fbx";
                     if (m_format == FbxExporter.Format.Obj) { extension = "obj"; }
 
-                    string filename = objects[0].name;
-                    var path = EditorUtility.SaveFilePanel("Export ." + extension + " file", "", filename, extension);
+                    string filename = EditorSceneManager.GetActiveScene().name;
+                    if (m_scope == Scope.Selected || filename.Length == 0)
+                    {
+                        foreach (var o in objects)
+                        {
+                            filename = o.name;
+                            break;
+                        }
+                    }
+
+
+                    var path = EditorUtility.SaveFilePanel("Export ." + extension + " file", "", SanitizeForFileName(filename), extension);
                     if (path != null && path.Length > 0)
                     {
                         DoExport(path, m_format, objects.ToArray());
                     }
                 }
             }
+        }
+
+        public static string SanitizeForFileName(string name)
+        {
+            var reg = new Regex("[\\/:\\*\\?<>\\|\\\"]");
+            return reg.Replace(name, "_");
         }
     }
 }
