@@ -25,6 +25,8 @@ cmake-build-*/
 external/
 Library/
 Temp/
+TestLocal/
+TestLocal.meta
 
 FbxExporter/*.csproj
 FbxExporter/*.sln

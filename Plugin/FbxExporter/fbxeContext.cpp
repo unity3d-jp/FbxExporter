@@ -400,11 +400,11 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight, con
         auto element = shape->CreateElementNormal();
         element->SetMappingMode(FbxGeometryElement::eByControlPoint);
         element->SetReferenceMode(FbxGeometryElement::eDirect);
-        auto& src_da = mesh->CreateElementNormal()->GetDirectArray();
+        auto& src_da = mesh->GetElementNormal()->GetDirectArray();
         auto& dst_da = element->GetDirectArray();
         dst_da.Resize(num_vertices);
 
-        auto base = (const FbxVector4*)src_da.GetLocked();
+        auto base = (const FbxVector4*)src_da.GetLocked(FbxLayerElementArray::eReadLock);
         auto dst = (FbxVector4*)dst_da.GetLocked();
         if (normals) {
             for (int vi = 0; vi < num_vertices; ++vi) {
@@ -428,11 +428,11 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight, con
         auto element = shape->CreateElementTangent();
         element->SetMappingMode(FbxGeometryElement::eByControlPoint);
         element->SetReferenceMode(FbxGeometryElement::eDirect);
-        auto& src_da = mesh->CreateElementNormal()->GetDirectArray();
+        auto& src_da = mesh->GetElementTangent()->GetDirectArray();
         auto& dst_da = element->GetDirectArray();
         dst_da.Resize(num_vertices);
 
-        auto base = (const FbxVector4*)src_da.GetLocked();
+        auto base = (const FbxVector4*)src_da.GetLocked(FbxLayerElementArray::eReadLock);
         auto dst = (FbxVector4*)dst_da.GetLocked();
         if (tangents) {
             for (int vi = 0; vi < num_vertices; ++vi) {

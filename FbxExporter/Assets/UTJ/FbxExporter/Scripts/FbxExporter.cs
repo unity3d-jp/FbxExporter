@@ -102,6 +102,25 @@ namespace UTJ.FbxExporter
             fbxeAddMesh(m_ctx, node, points.Length, points, normals, tangents, uv, colors);
             fbxeAddMeshSubmesh(m_ctx, node, topology, indices.Length, indices, -1);
 
+            int blendshapeCount = mesh.blendShapeCount;
+            if (blendshapeCount > 0)
+            {
+                var deltaVertices = new Vector3[mesh.vertexCount];
+                var deltaNormals = new Vector3[mesh.vertexCount];
+                var deltaTangents = new Vector3[mesh.vertexCount];
+                for (int bi = 0; bi < blendshapeCount; ++bi)
+                {
+                    string name = mesh.GetBlendShapeName(bi);
+                    int frameCount = mesh.GetBlendShapeFrameCount(bi);
+                    for (int fi = 0; fi < frameCount; ++fi)
+                    {
+                        float weight = mesh.GetBlendShapeFrameWeight(bi, fi);
+                        mesh.GetBlendShapeFrameVertices(bi, fi, deltaVertices, deltaNormals, deltaTangents);
+                        fbxeAddMeshBlendShape(m_ctx, node, name, weight, deltaVertices, deltaNormals, deltaTangents);
+                    }
+                }
+            }
+
             return true;
         }
 

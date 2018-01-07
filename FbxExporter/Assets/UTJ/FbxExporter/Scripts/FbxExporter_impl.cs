@@ -84,11 +84,13 @@ namespace UTJ.FbxExporter
             Topology topology, int num_indices, int[] indices, int material);
         [DllImport("FbxExporterCore")] static extern void fbxeAddMeshSkin(Context ctx, Node node,
             BoneWeight[] weights, int num_bones, Node[] bones, Matrix4x4[] bindposes);
-
+        [DllImport("FbxExporterCore")] static extern void fbxeAddMeshBlendShape(Context ctx, Node node,
+            string name, float weight, Vector3[] deltaPoints, Vector3[] deltaNormals, Vector3[] deltaTangents);
 
         [DllImport("FbxExporterCore")] static extern void fbxeGenerateTerrainMesh(
             float[,] heightmap, int width, int height, Vector3 size,
             Vector3[] dst_vertices, Vector3[] dst_normals, Vector2[] dst_uv, int[] dst_indices);
+
     }
 
 }

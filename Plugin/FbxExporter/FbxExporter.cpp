@@ -47,26 +47,32 @@ fbxeAPI fbxe::Node* fbxeCreateNode(fbxe::IContext *ctx, fbxe::Node *parent, cons
 fbxeAPI void fbxeSetTRS(fbxe::IContext *ctx, fbxe::Node *node, float3 t, quatf r, float3 s)
 {
     if (!ctx) { return; }
-    return ctx->setTRS(node, t, r, s);
+    ctx->setTRS(node, t, r, s);
 }
 
 fbxeAPI void fbxeAddMesh(fbxe::IContext *ctx, fbxe::Node *node, int num_vertices,
     const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[])
 {
     if (!ctx) { return; }
-    return ctx->addMesh(node, num_vertices, points, normals, tangents, uv, colors);
+    ctx->addMesh(node, num_vertices, points, normals, tangents, uv, colors);
 }
 
 fbxeAPI void fbxeAddMeshSubmesh(fbxe::IContext *ctx, fbxe::Node *node, fbxe::Topology topology, int num_indices, const int indices[], int material)
 {
     if (!ctx) { return; }
-    return ctx->addMeshSubmesh(node, topology, num_indices, indices, material);
+    ctx->addMeshSubmesh(node, topology, num_indices, indices, material);
 }
 
 fbxeAPI void fbxeAddMeshSkin(fbxe::IContext *ctx, fbxe::Node *node, Weights4 weights[], int num_bones, fbxe::Node *bones[], float4x4 bindposes[])
 {
     if (!ctx) { return; }
-    return ctx->addMeshSkin(node, weights, num_bones, bones, bindposes);
+    ctx->addMeshSkin(node, weights, num_bones, bones, bindposes);
+}
+
+fbxeAPI void fbxeAddMeshBlendShape(fbxe::IContext *ctx, fbxe::Node *node, const char *name, float weight, const fbxe::float3 points[], const fbxe::float3 normals[], const fbxe::float3 tangents[])
+{
+    if (!ctx) { return; }
+    ctx->addMeshBlendShape(node, name, weight, points, normals, tangents);
 }
 
 
