@@ -28,6 +28,7 @@ public:
         const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[]) override;
     void addMeshSubmesh(Node *node, Topology topology, int num_indices, const int indices[], int material) override;
     void addMeshSkin(Node *node, Weights4 weights[], int num_bones, Node *bones[], float4x4 bindposes[]) override;
+    void addMeshBlendShape(Node *node, const char *name, float weight, const float3 points[], const float3 normals[], const float3 tangents[]) override;
 
 private:
     ExportOptions m_opt;
@@ -340,4 +341,115 @@ void Context::addMeshSkin(Node *node_, Weights4 weights[], int num_bones, Node *
     }
 }
 
+void Context::addMeshBlendShape(Node *node_, const char *name, float weight, const float3 points[], const float3 normals[], const float3 tangents[])
+{
+    if (!node_) { return; }
+
+    auto node = reinterpret_cast<FbxNode*>(node_);
+    auto mesh = node->GetMesh();
+    if (!mesh) { return; }
+
+    auto *blendshape = (FbxBlendShape*)mesh->GetDeformer(0, FbxDeformer::EDeformerType::eBlendShape);
+    if (!blendshape) {
+        blendshape = FbxBlendShape::Create(m_scene, "");
+        blendshape->SetGeometry(mesh);
+    }
+
+    FbxBlendShapeChannel *channel = nullptr;
+    {
+        int num_channels = blendshape->GetBlendShapeChannelCount();
+        for (int i = 0; i < num_channels; ++i) {
+            auto c = blendshape->GetBlendShapeChannel(i);
+            if (strcmp(c->GetName(), name) == 0) {
+                channel = c;
+                break;
+            }
+        }
+    }
+    if (!channel) {
+        channel = FbxBlendShapeChannel::Create(m_scene, name);
+        channel->SetBlendShapeDeformer(blendshape);
+        blendshape->AddBlendShapeChannel(channel);
+    }
+
+    auto *shape = FbxShape::Create(m_scene, "");
+    channel->AddTargetShape(shape, weight);
+
+    int num_vertices = mesh->GetControlPointsCount();
+
+    {
+        // set points
+        shape->InitControlPoints(num_vertices);
+        auto base = mesh->GetControlPoints();
+        auto dst = shape->GetControlPoints();
+        if (points) {
+            for (int vi = 0; vi < num_vertices; ++vi) {
+                float3 delta = points[vi] * m_opt.scale_factor;
+                if (m_opt.flip_handedness) { delta = swap_handedness(delta); }
+                dst[vi] = ToP4((const float3&)base[vi] + delta);
+            }
+        }
+        else {
+            for (int vi = 0; vi < num_vertices; ++vi) {
+                dst[vi] = base[vi];
+            }
+        }
+    }
+    if (mesh->GetElementNormalCount() > 0) {
+        // set normals
+        auto element = shape->CreateElementNormal();
+        element->SetMappingMode(FbxGeometryElement::eByControlPoint);
+        element->SetReferenceMode(FbxGeometryElement::eDirect);
+        auto& src_da = mesh->CreateElementNormal()->GetDirectArray();
+        auto& dst_da = element->GetDirectArray();
+        dst_da.Resize(num_vertices);
+
+        auto base = (const FbxVector4*)src_da.GetLocked();
+        auto dst = (FbxVector4*)dst_da.GetLocked();
+        if (normals) {
+            for (int vi = 0; vi < num_vertices; ++vi) {
+                float3 delta = normals[vi];
+                if (m_opt.flip_handedness) { delta = swap_handedness(delta); }
+                auto tmp = base[vi];
+                (float3&)tmp = normalize((const float3&)tmp + delta);
+                dst[vi] = tmp;
+            }
+        }
+        else {
+            for (int vi = 0; vi < num_vertices; ++vi) {
+                dst[vi] = base[vi];
+            }
+        }
+        dst_da.Release((void**)&dst);
+        src_da.Release((void**)&dst);
+    }
+    if (mesh->GetElementTangentCount() > 0) {
+        // set tangents
+        auto element = shape->CreateElementTangent();
+        element->SetMappingMode(FbxGeometryElement::eByControlPoint);
+        element->SetReferenceMode(FbxGeometryElement::eDirect);
+        auto& src_da = mesh->CreateElementNormal()->GetDirectArray();
+        auto& dst_da = element->GetDirectArray();
+        dst_da.Resize(num_vertices);
+
+        auto base = (const FbxVector4*)src_da.GetLocked();
+        auto dst = (FbxVector4*)dst_da.GetLocked();
+        if (tangents) {
+            for (int vi = 0; vi < num_vertices; ++vi) {
+                float3 delta = tangents[vi];
+                if (m_opt.flip_handedness) { delta = swap_handedness(delta); }
+                auto tmp = base[vi];
+                (float3&)tmp = normalize((const float3&)tmp + delta);
+                dst[vi] = tmp;
+            }
+        }
+        else {
+            for (int vi = 0; vi < num_vertices; ++vi) {
+                dst[vi] = base[vi];
+            }
+        }
+        dst_da.Release((void**)&dst);
+        src_da.Release((void**)&dst);
+    }
+}
 } // namespace fbxe
