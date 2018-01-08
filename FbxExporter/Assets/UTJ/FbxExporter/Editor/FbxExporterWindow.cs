@@ -44,6 +44,10 @@ namespace UTJ.FbxExporter
 
         void OnGUI()
         {
+            m_format = (FbxExporter.Format)EditorGUILayout.EnumPopup("Format", m_format);
+
+            EditorGUILayout.Space();
+
             m_scope = (Scope)EditorGUILayout.EnumPopup("Scope", m_scope);
             if(m_scope == Scope.Selected)
             {
@@ -52,7 +56,10 @@ namespace UTJ.FbxExporter
                 EditorGUI.indentLevel--;
             }
 
-            m_format = (FbxExporter.Format)EditorGUILayout.EnumPopup("Format", m_format);
+            EditorGUILayout.Space();
+
+            m_opt.transform = EditorGUILayout.Toggle("Include Transform", m_opt.transform);
+
             m_opt.flip_handedness = EditorGUILayout.Toggle("Flip Handedness", m_opt.flip_handedness);
             m_opt.flip_faces = EditorGUILayout.Toggle("Flip Faces", m_opt.flip_faces);
             m_opt.quadify = EditorGUILayout.Toggle("Quadify", m_opt.quadify);

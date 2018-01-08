@@ -52,6 +52,7 @@ namespace UTJ.FbxExporter
             public float quadify_threshold_angle;
             public float scale_factor;
             public SystemUnit system_unit;
+            public bool transform;
 
             public static ExportOptions defaultValue
             {
@@ -64,6 +65,7 @@ namespace UTJ.FbxExporter
                         quadify_threshold_angle = 30.0f,
                         scale_factor = 1.0f,
                         system_unit = SystemUnit.Meter,
+                        transform = true,
                     };
                 }
             }

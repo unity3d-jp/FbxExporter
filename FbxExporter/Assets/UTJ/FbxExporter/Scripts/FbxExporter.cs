@@ -74,7 +74,8 @@ namespace UTJ.FbxExporter
             {
                 var parent = !trans.parent ? fbxeGetRootNode(m_ctx) : FindOrCreateNodeTree(trans.parent, act);
                 var node = fbxeCreateNode(m_ctx, parent, trans.name);
-                fbxeSetTRS(m_ctx, node, trans.localPosition, trans.localRotation, trans.localScale);
+                if (m_opt.transform)
+                    fbxeSetTRS(m_ctx, node, trans.localPosition, trans.localRotation, trans.localScale);
                 m_nodes.Add(trans, node);
 
                 if (act != null) { act.Invoke(trans, node); }
