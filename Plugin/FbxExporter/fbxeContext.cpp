@@ -36,6 +36,18 @@ private:
     ExportOptions m_opt;
     FbxManager *m_manager = nullptr;
     FbxScene *m_scene = nullptr;
+
+    struct MeshData
+    {
+        RawVector<float3> points;
+        RawVector<float3> normals;
+        RawVector<float4> tangents;
+        //// not needed for now
+        //RawVector<int> indices;
+        //RawVector<float2> uv;
+        //RawVector<float4> colors;
+    };
+    std::map<Node*, MeshData> m_mesh_data;
 };
 
 fbxeAPI IContext* CreateContext(const ExportOptions *opt)
@@ -191,17 +203,30 @@ void Context::addMesh(Node *node_, int num_vertices,
     auto node = reinterpret_cast<FbxNode*>(node_);
     auto mesh = FbxMesh::Create(m_scene, "");
 
+    auto& data = m_mesh_data[node];
     {
         // set points
+        data.points.assign(points, points + num_vertices);
+        if (m_opt.flip_handedness) {
+            for (auto& v : data.points) { v = swap_handedness(v); }
+        }
+        if (m_opt.scale_factor != 1.0f) {
+            for (auto& v : data.points) { v *= m_opt.scale_factor; }
+        }
+
         mesh->InitControlPoints(num_vertices);
         auto dst = mesh->GetControlPoints();
         for (int i = 0; i < num_vertices; ++i) {
-            dst[i] = ToP4(points[i] * m_opt.scale_factor);
+            dst[i] = ToP4(data.points[i]);
         }
-        if (m_opt.flip_handedness) { FlipHandedness(dst, num_vertices); }
     }
 
     if (normals) {
+        data.normals.assign(normals, normals + num_vertices);
+        if (m_opt.flip_handedness) {
+            for (auto& v : data.normals) { v = swap_handedness(v); }
+        }
+
         // set normals
         auto element = mesh->CreateElementNormal();
         element->SetMappingMode(FbxGeometryElement::eByControlPoint);
@@ -211,12 +236,16 @@ void Context::addMesh(Node *node_, int num_vertices,
         da.Resize(num_vertices);
         auto dst = (FbxVector4*)da.GetLocked();
         for (int i = 0; i < num_vertices; ++i) {
-            dst[i] = ToV4(normals[i]);
+            dst[i] = ToV4(data.normals[i]);
         }
-        if (m_opt.flip_handedness) { FlipHandedness(dst, num_vertices); }
         da.Release((void**)&dst);
     }
     if (tangents) {
+        data.tangents.assign(tangents, tangents + num_vertices);
+        if (m_opt.flip_handedness) {
+            for (auto& v : data.tangents) { v = swap_handedness(v); }
+        }
+
         // set tangents
         auto element = mesh->CreateElementTangent();
         element->SetMappingMode(FbxGeometryElement::eByControlPoint);
@@ -226,9 +255,8 @@ void Context::addMesh(Node *node_, int num_vertices,
         da.Resize(num_vertices);
         auto dst = (FbxVector4*)da.GetLocked();
         for (int i = 0; i < num_vertices; ++i) {
-            dst[i] = ToV4(tangents[i]);
+            dst[i] = ToV4(data.tangents[i]);
         }
-        if (m_opt.flip_handedness) { FlipHandedness(dst, num_vertices); }
         da.Release((void**)&dst);
     }
     if (uv) {
@@ -283,103 +311,11 @@ void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, co
     }
 
     if (topology == Topology::Triangles && m_opt.quadify) {
-        // quadify
 
-        const float threshold = m_opt.quadify_threshold_angle;
-        int num_triangles = num_indices / 3;
+        auto& data = m_mesh_data[node];
         RawVector<int> qindices;
         RawVector<int> qcounts;
-        RawVector<bool> qmerged;
-        qmerged.resize_zeroclear(num_triangles);
-        auto base_vertices = mesh->GetControlPoints();
-
-        for (int ti1 = 0; ti1 < num_triangles; ++ti1) {
-            if (qmerged[ti1]) { continue; }
-            auto *tri1 = indices + (ti1 * 3);
-            int quad_result[4];
-
-            int merge_ti = -1;
-            float min_angle = 180.0f;
-            const float3 normal1 = normalize(cross(
-                ToFloat3(base_vertices[tri1[1]] - base_vertices[tri1[0]]),
-                ToFloat3(base_vertices[tri1[2]] - base_vertices[tri1[0]])));
-
-            for (int ti2 = ti1 + 1; ti2 < num_triangles; ++ti2) {
-                if (qmerged[ti2])
-                    continue;
-                auto *tri2 = indices + (ti2 * 3);
-
-                int quad[6];
-                std::copy(tri1, tri1 + 3, quad);
-                std::copy(tri2, tri2 + 3, quad + 3);
-                std::sort(quad, quad + 6);
-                auto it = std::unique(quad, quad + 6);
-                if (it != quad + 4)
-                    continue;
-
-                float3 normal2 = normalize(cross(
-                    ToFloat3(base_vertices[tri2[1]] - base_vertices[tri2[0]]),
-                    ToFloat3(base_vertices[tri2[2]] - base_vertices[tri2[0]])));
-                if (dot(normal1, normal2) < 0.0f)
-                    continue;
-
-                float3 qvertices[4];
-                for (int i = 0; i < 4; ++i)
-                    qvertices[i] = ToFloat3(base_vertices[quad[i]]);
-
-                float3 center = float3::zero();
-                for (auto& v : qvertices)
-                    center += v;
-                center *= 0.25f;
-
-                float angles[4]{
-                    0.0f,
-                    angle_between2_signed(qvertices[0], qvertices[1], center, normal1),
-                    angle_between2_signed(qvertices[0], qvertices[2], center, normal1),
-                    angle_between2_signed(qvertices[0], qvertices[3], center, normal1),
-                };
-
-                int cwi[4], quad_tmp[4];
-                std::iota(cwi, cwi + 4, 0);
-                std::sort(cwi, cwi + 4, [&angles](int a, int b) {
-                    return angles[a] < angles[b];
-                });
-                for (int i = 0; i < 4; ++i) {
-                    quad_tmp[i] = quad[cwi[i]];
-                    qvertices[i] = ToFloat3(base_vertices[quad_tmp[i]]);
-                }
-
-                int corners[4][3]{
-                    { 3, 0, 1 },
-                    { 0, 1, 2 },
-                    { 1, 2, 3 },
-                    { 2, 3, 0 }
-                };
-                float diff = 0.0f;
-                for (int i = 0; i < 4; ++i) {
-                    float angle = angle_between2(
-                        qvertices[corners[i][0]],
-                        qvertices[corners[i][2]],
-                        qvertices[corners[i][1]]) * Rad2Deg;
-                    diff = std::max(diff, abs(angle - 90.0f));
-                }
-                if (diff < min_angle) {
-                    merge_ti = ti2;
-                    min_angle = diff;
-                    std::copy(quad_tmp, quad_tmp + 4, quad_result);
-                }
-            }
-
-            if (merge_ti != -1 && min_angle < threshold) {
-                qmerged[merge_ti] = true;
-                qindices.insert(qindices.end(), quad_result, quad_result + 4);
-                qcounts.push_back(4);
-            }
-            else {
-                qindices.insert(qindices.end(), tri1, tri1 + 3);
-                qcounts.push_back(3);
-            }
-        }
+        QuadifyTriangles(data.points, IArray<int>(indices, num_indices), m_opt.quadify_threshold_angle, qindices, qcounts);
 
         int pi = 0;
         int num_faces = (int)qcounts.size();
@@ -507,84 +443,75 @@ void Context::addMeshBlendShape(Node *node_, const char *name, float weight,
     auto *shape = FbxShape::Create(m_scene, "");
     channel->AddTargetShape(shape, weight);
 
-    int num_vertices = mesh->GetControlPointsCount();
+    auto& data = m_mesh_data[node];
+    int num_vertices = (int)data.points.size();
     {
         // set points
         shape->InitControlPoints(num_vertices);
-        auto base = mesh->GetControlPoints();
         auto dst = shape->GetControlPoints();
+        auto base = data.points.data();
         if (delta_points) {
             for (int vi = 0; vi < num_vertices; ++vi) {
                 float3 delta = delta_points[vi] * m_opt.scale_factor;
                 if (m_opt.flip_handedness) { delta = swap_handedness(delta); }
-                dst[vi] = ToP4(ToFloat3(base[vi]) + delta);
+                dst[vi] = ToP4(base[vi] + delta);
             }
         }
         else {
             for (int vi = 0; vi < num_vertices; ++vi) {
-                dst[vi] = base[vi];
+                dst[vi] = ToP4(base[vi]);
             }
         }
     }
-    if (mesh->GetElementNormalCount() > 0) {
+    if (!data.normals.empty()) {
         // set normals
         auto element = shape->CreateElementNormal();
         element->SetMappingMode(FbxGeometryElement::eByControlPoint);
         element->SetReferenceMode(FbxGeometryElement::eDirect);
-        auto& src_da = mesh->GetElementNormal()->GetDirectArray();
         auto& dst_da = element->GetDirectArray();
         dst_da.Resize(num_vertices);
 
-        auto base = (const FbxVector4*)src_da.GetLocked(FbxLayerElementArray::eReadLock);
+        auto base = data.normals.data();
         auto dst = (FbxVector4*)dst_da.GetLocked();
         if (delta_normals) {
             for (int vi = 0; vi < num_vertices; ++vi) {
                 float3 delta = delta_normals[vi];
                 if (m_opt.flip_handedness) { delta = swap_handedness(delta); }
-
-                auto& td = base[vi];
-                auto t = ToFloat3(td);
-                t = normalize(t + delta);
-                dst[vi] = { t[0], t[1], t[2], td[3] };
+                dst[vi] = ToV4(normalize(base[vi] + delta));
             }
         }
         else {
             for (int vi = 0; vi < num_vertices; ++vi) {
-                dst[vi] = base[vi];
+                dst[vi] = ToV4(base[vi]);
             }
         }
         dst_da.Release((void**)&dst);
-        src_da.Release((void**)&dst);
     }
-    if (mesh->GetElementTangentCount() > 0) {
+    if (!data.tangents.empty()) {
         // set tangents
         auto element = shape->CreateElementTangent();
         element->SetMappingMode(FbxGeometryElement::eByControlPoint);
         element->SetReferenceMode(FbxGeometryElement::eDirect);
-        auto& src_da = mesh->GetElementTangent()->GetDirectArray();
         auto& dst_da = element->GetDirectArray();
         dst_da.Resize(num_vertices);
 
-        auto base = (const FbxVector4*)src_da.GetLocked(FbxLayerElementArray::eReadLock);
         auto dst = (FbxVector4*)dst_da.GetLocked();
+        auto base = data.tangents.data();
         if (delta_tangents) {
             for (int vi = 0; vi < num_vertices; ++vi) {
                 float3 delta = delta_tangents[vi];
                 if (m_opt.flip_handedness) { delta = swap_handedness(delta); }
-
-                auto& td = base[vi];
-                auto t = ToFloat3(td);
-                t = normalize(t + delta);
-                dst[vi] = { t[0], t[1], t[2], td[3] };
+                float4 t = base[vi];
+                (float3&)t = normalize((float3&)t + delta);
+                dst[vi] = ToV4(t);
             }
         }
         else {
             for (int vi = 0; vi < num_vertices; ++vi) {
-                dst[vi] = base[vi];
+                dst[vi] = ToV4(base[vi]);
             }
         }
         dst_da.Release((void**)&dst);
-        src_da.Release((void**)&dst);
     }
 }
 } // namespace fbxe
