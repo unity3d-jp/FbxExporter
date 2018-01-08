@@ -279,21 +279,8 @@ int check_overlap(const T* a, const T *b, T *r)
     return ret;
 }
 
-template<class T> inline T angle_between_signed(const tvec3<T>& a, const tvec3<T>& b, const tvec3<T>& n)
-{
-    float ret = acos(dot(a, b));
-    if (dot(n, cross(a, b)) < 0.0f) {
-        ret *= -1.0f;
-    }
-    return ret;
-}
-template<class T> inline T angle_between2_signed(const tvec3<T>& p1, const tvec3<T>& p2, const tvec3<T>& center, const tvec3<T>& n)
-{
-    return angle_between_signed(normalize(p1 - center), normalize(p2 - center), n);
-}
 
-
-void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, const int indices_[], int material)
+void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, const int indices[], int material)
 {
     if (!node_) { return; }
 
@@ -311,11 +298,6 @@ void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, co
     default: break;
     }
 
-
-    const int *indices = indices_;
-
-
-
     if (topology == Topology::Triangles && m_opt.quadify) {
         const float threshold = 40.0f;
 
@@ -329,34 +311,47 @@ void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, co
         for (int ti1 = 0; ti1 < num_triangles; ++ti1) {
             if (qmerged[ti1]) { continue; }
             auto *tri1 = indices + (ti1 * 3);
-            int quad[6], quad_result[4];
-            std::copy(tri1, tri1+3, quad);
+            int quad_result[4];
 
             int merge_ti = -1;
             float min_angle = 180.0f;
-            float3 normal = cross(
+            float3 normal1 = cross(
                 ToFloat3(base_vertices[tri1[1]] - base_vertices[tri1[0]]),
                 ToFloat3(base_vertices[tri1[2]] - base_vertices[tri1[0]]));
 
             for (int ti2 = ti1 + 1; ti2 < num_triangles; ++ti2) {
-                if (qmerged[ti2]) { continue; }
+                if (qmerged[ti2])
+                    continue;
                 auto *tri2 = indices + (ti2 * 3);
-                std::copy(tri2, tri2 + 3, quad+3);
-                std::sort(quad, quad+6);
+
+                int quad[6];
+                std::copy(tri1, tri1 + 3, quad);
+                std::copy(tri2, tri2 + 3, quad + 3);
+                std::sort(quad, quad + 6);
                 auto it = std::unique(quad, quad + 6);
-                if (it != quad + 4) { continue; }
+                if (it != quad + 4)
+                    continue;
+
+                float3 normal2 = cross(
+                    ToFloat3(base_vertices[tri2[1]] - base_vertices[tri2[0]]),
+                    ToFloat3(base_vertices[tri2[2]] - base_vertices[tri2[0]]));
+                if (dot(normal1, normal2) < 0.0f)
+                    continue;
 
                 float3 qvertices[4];
-                for (int i = 0; i < 4; ++i) qvertices[i] = ToFloat3(base_vertices[quad[i]]);
+                for (int i = 0; i < 4; ++i)
+                    qvertices[i] = ToFloat3(base_vertices[quad[i]]);
+
                 float3 center = float3::zero();
-                for (auto& v : qvertices) { center += v; }
+                for (auto& v : qvertices)
+                    center += v;
                 center *= 0.25f;
 
                 float angles[4]{
                     0.0f,
-                    angle_between2_signed(qvertices[0], qvertices[1], center, normal),
-                    angle_between2_signed(qvertices[0], qvertices[2], center, normal),
-                    angle_between2_signed(qvertices[0], qvertices[3], center, normal),
+                    angle_between2_signed(qvertices[0], qvertices[1], center, normal1),
+                    angle_between2_signed(qvertices[0], qvertices[2], center, normal1),
+                    angle_between2_signed(qvertices[0], qvertices[3], center, normal1),
                 };
                 for (auto& v : angles) {
                     if (v < 0.0f) { v += PI*2.0f; }
@@ -406,15 +401,27 @@ void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, co
 
         int pi = 0;
         int num_faces = (int)qcounts.size();
-        for (int fi = 0; fi < num_faces; ++fi) {
-            int count = qcounts[fi];
-
-            mesh->BeginPolygon(material);
-            for (int vi = count - 1; vi >= 0; --vi) {
-                mesh->AddPolygon(qindices[pi + vi]);
+        if (m_opt.flip_faces) {
+            for (int fi = 0; fi < num_faces; ++fi) {
+                int count = qcounts[fi];
+                mesh->BeginPolygon(material);
+                for (int vi = count - 1; vi >= 0; --vi) {
+                    mesh->AddPolygon(qindices[pi + vi]);
+                }
+                pi += count;
+                mesh->EndPolygon();
             }
-            pi += count;
-            mesh->EndPolygon();
+        }
+        else {
+            for (int fi = 0; fi < num_faces; ++fi) {
+                int count = qcounts[fi];
+                mesh->BeginPolygon(material);
+                for (int vi = 0; vi < count; ++vi) {
+                    mesh->AddPolygon(qindices[pi + vi]);
+                }
+                pi += count;
+                mesh->EndPolygon();
+            }
         }
     }
     else {
@@ -439,7 +446,6 @@ void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, co
                 mesh->EndPolygon();
             }
         }
-
     }
 }
 
