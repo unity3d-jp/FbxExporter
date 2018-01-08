@@ -263,7 +263,37 @@ void Context::addMesh(Node *node_, int num_vertices,
     node->SetShadingMode(FbxNode::eTextureShading);
 }
 
-void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, const int indices[], int material)
+template<size_t N, class T>
+int check_overlap(const T* a, const T *b, T *r)
+{
+    int ret = 0;
+    for (int i1 = 0; i1 < N; ++i1) {
+        T tmp = a[i1];
+        for (int i2 = 0; i2 < N; ++i2) {
+            if (tmp == b[i2]) {
+                r[ret++] = tmp;
+                break;
+            }
+        }
+    }
+    return ret;
+}
+
+template<class T> inline T angle_between_signed(const tvec3<T>& a, const tvec3<T>& b, const tvec3<T>& n)
+{
+    float ret = acos(dot(a, b));
+    if (dot(n, cross(a, b)) < 0.0f) {
+        ret *= -1.0f;
+    }
+    return ret;
+}
+template<class T> inline T angle_between2_signed(const tvec3<T>& p1, const tvec3<T>& p2, const tvec3<T>& center, const tvec3<T>& n)
+{
+    return angle_between_signed(normalize(p1 - center), normalize(p2 - center), n);
+}
+
+
+void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, const int indices_[], int material)
 {
     if (!node_) { return; }
 
@@ -281,26 +311,135 @@ void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, co
     default: break;
     }
 
-    int pi = 0;
-    if (m_opt.flip_faces) {
-        while (pi < num_indices) {
-            mesh->BeginPolygon(material);
-            for (int vi = vertices_in_primitive - 1; vi >= 0; --vi) {
-                mesh->AddPolygon(indices[pi + vi]);
+
+    const int *indices = indices_;
+
+
+
+    if (topology == Topology::Triangles && m_opt.quadify) {
+        const float threshold = 40.0f;
+
+        int num_triangles = num_indices / 3;
+        RawVector<int> qindices;
+        RawVector<int> qcounts;
+        RawVector<bool> qmerged;
+        qmerged.resize_zeroclear(num_triangles);
+        auto base_vertices = mesh->GetControlPoints();
+
+        for (int ti1 = 0; ti1 < num_triangles; ++ti1) {
+            if (qmerged[ti1]) { continue; }
+            auto *tri1 = indices + (ti1 * 3);
+            int quad[6], quad_result[4];
+            std::copy(tri1, tri1+3, quad);
+
+            int merge_ti = -1;
+            float min_angle = 180.0f;
+            float3 normal = cross(
+                ToFloat3(base_vertices[tri1[1]] - base_vertices[tri1[0]]),
+                ToFloat3(base_vertices[tri1[2]] - base_vertices[tri1[0]]));
+
+            for (int ti2 = ti1 + 1; ti2 < num_triangles; ++ti2) {
+                if (qmerged[ti2]) { continue; }
+                auto *tri2 = indices + (ti2 * 3);
+                std::copy(tri2, tri2 + 3, quad+3);
+                std::sort(quad, quad+6);
+                auto it = std::unique(quad, quad + 6);
+                if (it != quad + 4) { continue; }
+
+                float3 qvertices[4];
+                for (int i = 0; i < 4; ++i) qvertices[i] = ToFloat3(base_vertices[quad[i]]);
+                float3 center = float3::zero();
+                for (auto& v : qvertices) { center += v; }
+                center *= 0.25f;
+
+                float angles[4]{
+                    0.0f,
+                    angle_between2_signed(qvertices[0], qvertices[1], center, normal),
+                    angle_between2_signed(qvertices[0], qvertices[2], center, normal),
+                    angle_between2_signed(qvertices[0], qvertices[3], center, normal),
+                };
+                for (auto& v : angles) {
+                    if (v < 0.0f) { v += PI*2.0f; }
+                }
+
+                int cwi[4], quad_tmp[4];
+                std::iota(cwi, cwi + 4, 0);
+                std::sort(cwi, cwi + 4, [&angles](int a, int b) {
+                    return angles[a] < angles[b];
+                });
+                for (int i = 0; i < 4; ++i) {
+                    quad_tmp[i] = quad[cwi[i]];
+                    qvertices[i] = ToFloat3(base_vertices[quad_tmp[i]]);
+                }
+
+                int corners[4][3]{
+                    { 3, 0, 1 },
+                    { 0, 1, 2 },
+                    { 1, 2, 3 },
+                    { 2, 3, 0 }
+                };
+                float diff = 0.0f;
+                for (int i = 0; i < 4; ++i) {
+                    float angle = angle_between2(
+                        qvertices[corners[i][0]],
+                        qvertices[corners[i][2]],
+                        qvertices[corners[i][1]]) * Rad2Deg;
+                    diff = std::max(diff, abs(angle - 90.0f));
+                }
+                if (diff < min_angle) {
+                    merge_ti = ti2;
+                    min_angle = diff;
+                    std::copy(quad_tmp, quad_tmp + 4, quad_result);
+                }
             }
-            pi += vertices_in_primitive;
+
+            if (merge_ti != -1 && min_angle < threshold) {
+                qmerged[merge_ti] = true;
+                qindices.insert(qindices.end(), quad_result, quad_result + 4);
+                qcounts.push_back(4);
+            }
+            else {
+                qindices.insert(qindices.end(), tri1, tri1 + 3);
+                qcounts.push_back(3);
+            }
+        }
+
+        int pi = 0;
+        int num_faces = (int)qcounts.size();
+        for (int fi = 0; fi < num_faces; ++fi) {
+            int count = qcounts[fi];
+
+            mesh->BeginPolygon(material);
+            for (int vi = count - 1; vi >= 0; --vi) {
+                mesh->AddPolygon(qindices[pi + vi]);
+            }
+            pi += count;
             mesh->EndPolygon();
         }
     }
     else {
-        while (pi < num_indices) {
-            mesh->BeginPolygon(material);
-            for (int vi = 0; vi < vertices_in_primitive; ++vi) {
-                mesh->AddPolygon(indices[pi + vi]);
+        int pi = 0;
+        if (m_opt.flip_faces) {
+            while (pi < num_indices) {
+                mesh->BeginPolygon(material);
+                for (int vi = vertices_in_primitive - 1; vi >= 0; --vi) {
+                    mesh->AddPolygon(indices[pi + vi]);
+                }
+                pi += vertices_in_primitive;
+                mesh->EndPolygon();
             }
-            pi += vertices_in_primitive;
-            mesh->EndPolygon();
         }
+        else {
+            while (pi < num_indices) {
+                mesh->BeginPolygon(material);
+                for (int vi = 0; vi < vertices_in_primitive; ++vi) {
+                    mesh->AddPolygon(indices[pi + vi]);
+                }
+                pi += vertices_in_primitive;
+                mesh->EndPolygon();
+            }
+        }
+
     }
 }
 

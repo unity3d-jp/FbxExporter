@@ -13,6 +13,7 @@
 #include <iostream>
 #include <sstream>
 #include <atomic>
+#include <numeric>
 
 #include <fbxsdk.h>
 #include "MeshUtils/MeshUtils.h"

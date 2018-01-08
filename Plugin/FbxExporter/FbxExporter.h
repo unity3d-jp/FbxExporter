@@ -57,6 +57,7 @@ namespace fbxe {
     {
         int flip_handedness = 0;
         int flip_faces = 0;
+        int quadify = 1;
         float scale_factor = 1.0f;
         SystemUnit system_unit = SystemUnit::Meter;
     };

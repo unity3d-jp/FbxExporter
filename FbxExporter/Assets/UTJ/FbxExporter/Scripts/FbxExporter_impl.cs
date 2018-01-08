@@ -48,6 +48,7 @@ namespace UTJ.FbxExporter
         {
             public bool flip_handedness;
             public bool flip_faces;
+            public bool quadify;
             public float scale_factor;
             public SystemUnit system_unit;
 
@@ -58,6 +59,7 @@ namespace UTJ.FbxExporter
                     return new ExportOptions {
                         flip_handedness = true,
                         flip_faces = true,
+                        quadify = true,
                         scale_factor = 1.0f,
                         system_unit = SystemUnit.Meter,
                     };

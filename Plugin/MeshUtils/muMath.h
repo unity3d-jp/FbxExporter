@@ -513,11 +513,11 @@ template<class T> inline T angle_between(const tvec3<T>& a, const tvec3<T>& b)
 {
     return acos(dot(a, b));
 }
-template<class T> inline T angle_between2(const tvec3<T>& pos1, const tvec3<T>& pos2, const tvec3<T>& center)
+template<class T> inline T angle_between2(const tvec3<T>& p1, const tvec3<T>& p2, const tvec3<T>& center)
 {
     return angle_between(
-        normalize(pos1 - center),
-        normalize(pos2 - center));
+        normalize(p1 - center),
+        normalize(p2 - center));
 }
 
 template<class T> inline tvec3<T> apply_rotation(const tquat<T>& q, const tvec3<T>& p)
