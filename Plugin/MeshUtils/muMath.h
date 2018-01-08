@@ -522,14 +522,14 @@ template<class T> inline T angle_between2(const tvec3<T>& p1, const tvec3<T>& p2
 
 template<class T> inline T angle_between_signed(const tvec3<T>& a, const tvec3<T>& b, const tvec3<T>& n)
 {
-    float ret = acos(clamp01(dot(a, b)));
+    float ret = atan2(length(cross(a, b)), dot(a, b));
     if (dot(n, cross(a, b)) < 0)
         ret *= -1.0f;
     return ret;
 }
 template<class T> inline T angle_between2_signed(const tvec3<T>& p1, const tvec3<T>& p2, const tvec3<T>& center, const tvec3<T>& n)
 {
-    return angle_between_signed(normalize(p1 - center), normalize(p2 - center), n);
+    return angle_between_signed((p1 - center), (p2 - center), n);
 }
 
 template<class T> inline tvec3<T> apply_rotation(const tquat<T>& q, const tvec3<T>& p)

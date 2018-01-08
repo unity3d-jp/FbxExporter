@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "MeshUtils/MeshUtils.h"
 #include "fbxeContext.h"
 #include "fbxeUtils.h"
 
@@ -263,23 +264,6 @@ void Context::addMesh(Node *node_, int num_vertices,
     node->SetShadingMode(FbxNode::eTextureShading);
 }
 
-template<size_t N, class T>
-int check_overlap(const T* a, const T *b, T *r)
-{
-    int ret = 0;
-    for (int i1 = 0; i1 < N; ++i1) {
-        T tmp = a[i1];
-        for (int i2 = 0; i2 < N; ++i2) {
-            if (tmp == b[i2]) {
-                r[ret++] = tmp;
-                break;
-            }
-        }
-    }
-    return ret;
-}
-
-
 void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, const int indices[], int material)
 {
     if (!node_) { return; }
@@ -299,8 +283,9 @@ void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, co
     }
 
     if (topology == Topology::Triangles && m_opt.quadify) {
-        const float threshold = 40.0f;
+        // quadify
 
+        const float threshold = m_opt.quadify_threshold_angle;
         int num_triangles = num_indices / 3;
         RawVector<int> qindices;
         RawVector<int> qcounts;
@@ -315,9 +300,9 @@ void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, co
 
             int merge_ti = -1;
             float min_angle = 180.0f;
-            float3 normal1 = cross(
+            const float3 normal1 = normalize(cross(
                 ToFloat3(base_vertices[tri1[1]] - base_vertices[tri1[0]]),
-                ToFloat3(base_vertices[tri1[2]] - base_vertices[tri1[0]]));
+                ToFloat3(base_vertices[tri1[2]] - base_vertices[tri1[0]])));
 
             for (int ti2 = ti1 + 1; ti2 < num_triangles; ++ti2) {
                 if (qmerged[ti2])
@@ -332,9 +317,9 @@ void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, co
                 if (it != quad + 4)
                     continue;
 
-                float3 normal2 = cross(
+                float3 normal2 = normalize(cross(
                     ToFloat3(base_vertices[tri2[1]] - base_vertices[tri2[0]]),
-                    ToFloat3(base_vertices[tri2[2]] - base_vertices[tri2[0]]));
+                    ToFloat3(base_vertices[tri2[2]] - base_vertices[tri2[0]])));
                 if (dot(normal1, normal2) < 0.0f)
                     continue;
 
@@ -353,9 +338,6 @@ void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, co
                     angle_between2_signed(qvertices[0], qvertices[2], center, normal1),
                     angle_between2_signed(qvertices[0], qvertices[3], center, normal1),
                 };
-                for (auto& v : angles) {
-                    if (v < 0.0f) { v += PI*2.0f; }
-                }
 
                 int cwi[4], quad_tmp[4];
                 std::iota(cwi, cwi + 4, 0);
