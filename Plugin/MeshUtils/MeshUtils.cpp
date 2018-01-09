@@ -240,7 +240,8 @@ void QuadifyTriangles(const IArray<float3> vertices, const IArray<int> indices, 
         auto *tri1 = indices.data() + (ti1 * 3);
         const float3 normal1 = normalize(cross(vertices[tri1[1]] - vertices[tri1[0]], vertices[tri1[2]] - vertices[tri1[0]]));
 
-        for (int ti2 = ti1 + 1; ti2 < num_triangles; ++ti2) {
+        // ti1 - 1 is highly likely a triangle that constitutes a quad
+        for (int ti2 = std::max(ti1 - 1, 0); ti2 < num_triangles; ++ti2) {
             auto *tri2 = indices.data() + (ti2 * 3);
 
             if (check_overlap(tri1, tri2) != 2)
@@ -301,6 +302,7 @@ void QuadifyTriangles(const IArray<float3> vertices, const IArray<int> indices, 
                 cd.nindex = ti2;
                 cd.nangle = diff;
                 std::copy(quad_tmp, quad_tmp + 4, cd.quad);
+                if (diff < threshold_angle * 0.5f) { break; }
             }
         }
     });
