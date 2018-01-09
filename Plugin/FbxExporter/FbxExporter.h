@@ -58,7 +58,8 @@ namespace fbxe {
         int flip_handedness = 0;
         int flip_faces = 0;
         int quadify = 1;
-        float quadify_threshold_angle = 40.0f;
+        int quadify_full_search = 0;
+        float quadify_threshold_angle = 20.0f;
         float scale_factor = 1.0f;
         SystemUnit system_unit = SystemUnit::Meter;
     };

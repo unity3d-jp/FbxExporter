@@ -101,6 +101,7 @@ namespace UTJ.FbxExporter
             if (m_opt.quadify)
             {
                 EditorGUI.indentLevel++;
+                m_opt.quadify_full_search = EditorGUILayout.Toggle("Full Search", m_opt.quadify_full_search);
                 m_opt.quadify_threshold_angle = EditorGUILayout.FloatField("Threshold Angle", m_opt.quadify_threshold_angle);
                 EditorGUI.indentLevel--;
             }

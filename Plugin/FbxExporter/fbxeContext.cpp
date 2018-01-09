@@ -414,7 +414,7 @@ void Context::addMeshSubmesh(Node *node, Topology topology, int num_indices, con
         if (topology == Topology::Triangles && m_opt.quadify) {
             RawVector<int> qindices;
             RawVector<int> qcounts;
-            QuadifyTriangles(data.points, sm.indices, m_opt.quadify_threshold_angle, qindices, qcounts);
+            QuadifyTriangles(data.points, sm.indices, m_opt.quadify_full_search, m_opt.quadify_threshold_angle, qindices, qcounts);
 
             int pi = 0;
             int num_faces = (int)qcounts.size();
