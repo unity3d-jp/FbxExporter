@@ -1,15 +1,19 @@
 # FbxExporter
+[English](https://translate.google.com/translate?sl=ja&tl=en&u=https://github.com/unity3d-jp/FbxExporter)  
 
-## Usage
-1. Import this package: [FbxExporter.unitypackage](https://github.com/unity3d-jp/FbxExporter/releases/download/20180109/FbxExporter.unitypackage)
-2. Open Window -> Fbx Exporter
-3. Select objects to export (or change scope to "Entire Scene") and export
+Unity の Mesh を .fbx 形式で書き出すプラグインです。  
+Skinning や BlendShape もサポートしており、四角形化の機能も備えています。
+[NormalPainter](https://github.com/unity3d-jp/NormalPainter) や [BlendShapeBuilder](https://github.com/unity3d-jp/BlendShapeBuilder) などで編集した Mesh を DCC ツールに戻す用途を想定しています。
 
-## Features & Limitations
-- Supported platforms are Windows (64 bit)
-  - Also confirmed to work on Linux, but you need to build plugin from source.
-- The only feature currently supported is exporting meshes. Animations, textures or any others will not be exported.
-  - MeshRenderer, SkinnedMeshRenderer and Terrain component will be exported as meshes. Skinning and blend shape are supported.
+Unity 2017.1 以上、Windows or Linux で動作を確認しています。  
+Linux はソースからビルドする必要があります。(Plugin ディレクトリで cmake) Mac は fbx sdk のに絡む事情により現在非サポートです。
+
+AssetStore に [Unity Technologies 公式の FBX Exporter](https://www.assetstore.unity3d.com/en/#!/content/101408) が別にありますが、そちらは Skinning や BlendShape がサポートされていません (2018/01 現在)。近い先にサポートされる見込みですが、それまでは本プラグインが役立つこともあるでしょう。
+
+## 使い方
+1. [FbxExporter.unitypackage](https://github.com/unity3d-jp/FbxExporter/releases/download/20180110/FbxExporter.unitypackage) をプロジェクトにインポート
+2. Window -> Fbx Exporter でツールウィンドウを開く
+3. エクスポートしたいオブジェクトを選択 (もしくは "Scope" を "Entire Scene" にして全オブジェクトを対象) にして "Export"
 
 ## License
 [MIT](LICENSE.txt)
