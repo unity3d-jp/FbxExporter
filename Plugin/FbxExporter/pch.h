@@ -14,6 +14,7 @@
 #include <sstream>
 #include <atomic>
 #include <numeric>
+#include <future>
 
 #include <fbxsdk.h>
 

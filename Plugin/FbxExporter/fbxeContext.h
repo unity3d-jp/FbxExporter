@@ -8,7 +8,7 @@ class IContext
 {
 public:
     virtual void release() = 0;
-    virtual bool clear() = 0;
+    virtual void clear() = 0;
 
     virtual bool createScene(const char *name) = 0;
     virtual bool write(const char *path, Format format = Format::FbxBinary) = 0;
