@@ -1,7 +1,7 @@
 # FbxExporter
 
 ## Usage
-1. Import this package: [FbxExporter.unitypackage](https://github.com/unity3d-jp/FbxExporter/releases/download/20180107/FbxExporter.unitypackage)
+1. Import this package: [FbxExporter.unitypackage](https://github.com/unity3d-jp/FbxExporter/releases/download/20180109/FbxExporter.unitypackage)
 2. Open Window -> Fbx Exporter
 3. Select objects to export (or change scope to "Entire Scene") and export
 
