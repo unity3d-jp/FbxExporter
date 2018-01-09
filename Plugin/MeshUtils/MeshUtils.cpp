@@ -201,19 +201,20 @@ template bool GenerateWeightsN(RawVector<Weights<4>>& dst, IArray<int> bone_indi
 template bool GenerateWeightsN(RawVector<Weights<8>>& dst, IArray<int> bone_indices, IArray<float> bone_weights, int bones_per_vertex);
 
 
-template<size_t N, class Iter>
-inline int check_overlap(Iter a, Iter b)
+inline int check_overlap(const int *a, const int *b)
 {
+    int i00 = a[0], i01 = a[1], i02 = a[2];
+    int i10 = b[0], i11 = b[1], i12 = b[2];
     int ret = 0;
-    for (int i1 = 0; i1 < N; ++i1) {
-        auto tmp = a[i1];
-        for (int i2 = 0; i2 < N; ++i2) {
-            if (tmp == b[i2]) {
-                ++ret;
-                break;
-            }
-        }
-    }
+    if (i00 == i10) ++ret;
+    if (i00 == i11) ++ret;
+    if (i00 == i12) ++ret;
+    if (i01 == i10) ++ret;
+    if (i01 == i11) ++ret;
+    if (i01 == i12) ++ret;
+    if (i02 == i10) ++ret;
+    if (i02 == i11) ++ret;
+    if (i02 == i12) ++ret;
     return ret;
 }
 
@@ -230,7 +231,7 @@ void QuadifyTriangles(const IArray<float3> vertices, const IArray<int> indices, 
     int num_triangles = (int)indices.size() / 3;
     RawVector<Connection> connections(num_triangles);
 
-    parallel_for(0, num_triangles, 2048, [&](int ti1) {
+    parallel_for(0, num_triangles, 8192, [&](int ti1) {
         auto& cd = connections[ti1];
         cd.nindex = -1;
         cd.nangle = 180.0f;
@@ -242,7 +243,7 @@ void QuadifyTriangles(const IArray<float3> vertices, const IArray<int> indices, 
         for (int ti2 = ti1 + 1; ti2 < num_triangles; ++ti2) {
             auto *tri2 = indices.data() + (ti2 * 3);
 
-            if (check_overlap<3>(tri1, tri2) != 2)
+            if (check_overlap(tri1, tri2) != 2)
                 continue;
 
             float3 normal2 = normalize(cross(vertices[tri2[1]] - vertices[tri2[0]], vertices[tri2[2]] - vertices[tri2[0]]));
