@@ -201,26 +201,49 @@ template bool GenerateWeightsN(RawVector<Weights<4>>& dst, IArray<int> bone_indi
 template bool GenerateWeightsN(RawVector<Weights<8>>& dst, IArray<int> bone_indices, IArray<float> bone_weights, int bones_per_vertex);
 
 
+template<size_t N, class Iter>
+inline int check_overlap(Iter a, Iter b)
+{
+    int ret = 0;
+    for (int i1 = 0; i1 < N; ++i1) {
+        auto tmp = a[i1];
+        for (int i2 = 0; i2 < N; ++i2) {
+            if (tmp == b[i2]) {
+                ++ret;
+                break;
+            }
+        }
+    }
+    return ret;
+}
+
 void QuadifyTriangles(const IArray<float3> vertices, const IArray<int> indices, float threshold_angle,
     RawVector<int>& dst_indices, RawVector<int>& dst_counts)
 {
+    struct Connection
+    {
+        int nindex;
+        float nangle;
+        int quad[4];
+        bool merged;
+    };
     int num_triangles = (int)indices.size() / 3;
-    RawVector<bool> qmerged;
-    qmerged.resize_zeroclear(num_triangles);
+    RawVector<Connection> connections(num_triangles);
 
-    for (int ti1 = 0; ti1 < num_triangles; ++ti1) {
-        if (qmerged[ti1]) { continue; }
+    parallel_for(0, num_triangles, 2048, [&](int ti1) {
+        auto& cd = connections[ti1];
+        cd.nindex = -1;
+        cd.nangle = 180.0f;
+        cd.merged = false;
+
         auto *tri1 = indices.data() + (ti1 * 3);
-        int quad_result[4];
-
-        int merge_ti = -1;
-        float min_angle = 180.0f;
         const float3 normal1 = normalize(cross(vertices[tri1[1]] - vertices[tri1[0]], vertices[tri1[2]] - vertices[tri1[0]]));
 
         for (int ti2 = ti1 + 1; ti2 < num_triangles; ++ti2) {
-            if (qmerged[ti2])
-                continue;
             auto *tri2 = indices.data() + (ti2 * 3);
+
+            if (check_overlap<3>(tri1, tri2) != 2)
+                continue;
 
             float3 normal2 = normalize(cross(vertices[tri2[1]] - vertices[tri2[0]], vertices[tri2[2]] - vertices[tri2[0]]));
             if (dot(normal1, normal2) < 0.0f)
@@ -230,9 +253,7 @@ void QuadifyTriangles(const IArray<float3> vertices, const IArray<int> indices, 
             std::copy(tri1, tri1 + 3, quad);
             std::copy(tri2, tri2 + 3, quad + 3);
             std::sort(quad, quad + 6);
-            auto it = std::unique(quad, quad + 6);
-            if (it != quad + 4)
-                continue;
+            std::unique(quad, quad + 6);
 
             float3 qvertices[4];
             for (int i = 0; i < 4; ++i)
@@ -274,19 +295,26 @@ void QuadifyTriangles(const IArray<float3> vertices, const IArray<int> indices, 
                     qvertices[corners[i][1]]) * Rad2Deg;
                 diff = std::max(diff, abs(angle - 90.0f));
             }
-            if (diff < min_angle) {
-                merge_ti = ti2;
-                min_angle = diff;
-                std::copy(quad_tmp, quad_tmp + 4, quad_result);
+            if (diff < threshold_angle && diff < cd.nangle)
+            {
+                cd.nindex = ti2;
+                cd.nangle = diff;
+                std::copy(quad_tmp, quad_tmp + 4, cd.quad);
             }
         }
+    });
 
-        if (merge_ti != -1 && min_angle < threshold_angle) {
-            qmerged[merge_ti] = true;
-            dst_indices.insert(dst_indices.end(), quad_result, quad_result + 4);
+    for (int ti1 = 0; ti1 < num_triangles; ++ti1) {
+        auto& cd = connections[ti1];
+        if (cd.merged) { continue; }
+
+        if (cd.nindex != -1 && !connections[cd.nindex].merged) {
+            connections[cd.nindex].merged = true;
+            dst_indices.insert(dst_indices.end(), cd.quad, cd.quad + 4);
             dst_counts.push_back(4);
         }
         else {
+            auto *tri1 = indices.data() + (ti1 * 3);
             dst_indices.insert(dst_indices.end(), tri1, tri1 + 3);
             dst_counts.push_back(3);
         }
