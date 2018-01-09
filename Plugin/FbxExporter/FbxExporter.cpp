@@ -22,10 +22,16 @@ fbxeAPI int fbxeCreateScene(fbxe::IContext *ctx, const char *name)
     return ctx->createScene(name);
 }
 
-fbxeAPI int fbxeWrite(fbxe::IContext *ctx, const char *path, fbxe::Format format)
+fbxeAPI int fbxeWriteAsync(fbxe::IContext *ctx, const char *path, fbxe::Format format)
 {
     if (!ctx) { return false; }
-    return ctx->write(path, format);
+    return ctx->writeAsync(path, format);
+}
+
+fbxeAPI int fbxeIsFinished(fbxe::IContext *ctx)
+{
+    if (!ctx) { return false; }
+    return ctx->isFinished();
 }
 
 fbxeAPI fbxe::Node* fbxeGetRootNode(fbxe::IContext *ctx)

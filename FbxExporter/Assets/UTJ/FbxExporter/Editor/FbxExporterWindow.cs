@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
@@ -18,11 +19,19 @@ namespace UTJ.FbxExporter
             window.Show();
         }
 
-        enum Scope
+        public enum Scope
         {
             Selected,
             EntireScene,
         }
+
+        public class Record
+        {
+            public FbxExporter exporter;
+            public string path;
+            public DateTime started = DateTime.Now;
+        }
+        static List<Record> s_records = new List<Record>();
 
         Scope m_scope = Scope.Selected;
         bool m_includeChildren = true;
@@ -37,9 +46,35 @@ namespace UTJ.FbxExporter
             foreach (var obj in objects)
                 exporter.AddNode(obj);
 
-            var ret = exporter.Write(path, format);
-            exporter.Release();
-            return ret;
+            if(exporter.WriteAsync(path, format))
+            {
+                Debug.Log("Export started: " + path);
+                s_records.Add(new Record {path = path, exporter = exporter});
+                return true;
+            }
+            else
+            {
+                Debug.Log("Export failed: " + path);
+                return false;
+            }
+        }
+
+        void Update()
+        {
+            // poll async write
+            bool finished = false;
+            foreach (var record in s_records)
+            {
+                if (record.exporter.IsFinished())
+                {
+                    var elapsed = DateTime.Now - record.started;
+                    record.exporter.Release();
+                    Debug.Log("Export finished: " + record.path + " (" + elapsed.TotalSeconds + " seconds)");
+                    finished = true;
+                }
+            }
+            if (finished)
+                s_records.RemoveAll((a) => { return a.exporter.IsFinished(); });
         }
 
         void OnGUI()

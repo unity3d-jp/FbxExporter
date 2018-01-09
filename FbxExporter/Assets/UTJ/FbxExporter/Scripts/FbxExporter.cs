@@ -41,9 +41,14 @@ namespace UTJ.FbxExporter
                 FindOrCreateNodeTree(go.GetComponent<Transform>(), ProcessNode);
         }
 
-        public bool Write(string path, Format format)
+        public bool WriteAsync(string path, Format format)
         {
-            return fbxeWrite(m_ctx, path, format);
+            return fbxeWriteAsync(m_ctx, path, format);
+        }
+
+        public bool IsFinished()
+        {
+            return fbxeIsFinished(m_ctx);
         }
 
 

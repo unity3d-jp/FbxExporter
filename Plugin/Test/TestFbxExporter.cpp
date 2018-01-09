@@ -199,10 +199,10 @@ void TestFbxExportMesh()
         fbxeAddMeshSubmesh(ctx, mesh, fbxe::Topology::Quads, indices.size(), indices.data(), -1);
     }
 
-    fbxeWrite(ctx, "mesh_binary.fbx", fbxe::Format::FbxBinary);
-    fbxeWrite(ctx, "mesh_ascii.fbx", fbxe::Format::FbxAscii);
-    fbxeWrite(ctx, "mesh_encrypted.fbx", fbxe::Format::FbxEncrypted);
-    fbxeWrite(ctx, "mesh_obj.obj", fbxe::Format::Obj);
+    fbxeWriteAsync(ctx, "mesh_binary.fbx", fbxe::Format::FbxBinary);
+    fbxeWriteAsync(ctx, "mesh_ascii.fbx", fbxe::Format::FbxAscii);
+    fbxeWriteAsync(ctx, "mesh_encrypted.fbx", fbxe::Format::FbxEncrypted);
+    fbxeWriteAsync(ctx, "mesh_obj.obj", fbxe::Format::Obj);
     fbxeReleaseContext(ctx);
 }
 RegisterTestEntry(TestFbxExportMesh)
@@ -241,8 +241,8 @@ void TestFbxExportSkinnedMesh()
     fbxeAddMeshSubmesh(ctx, mesh, fbxe::Topology::Quads, indices.size(), indices.data(), -1);
     fbxeAddMeshSkin(ctx, mesh, weights.data(), num_bones, bones, bindposes);
 
-    fbxeWrite(ctx, "SkinnedMesh_binary.fbx", fbxe::Format::FbxBinary);
-    fbxeWrite(ctx, "SkinnedMesh_ascii.fbx", fbxe::Format::FbxAscii);
+    fbxeWriteAsync(ctx, "SkinnedMesh_binary.fbx", fbxe::Format::FbxBinary);
+    fbxeWriteAsync(ctx, "SkinnedMesh_ascii.fbx", fbxe::Format::FbxAscii);
     fbxeReleaseContext(ctx);
 }
 RegisterTestEntry(TestFbxExportSkinnedMesh)
@@ -299,8 +299,8 @@ void TestFbxExportSkinnedMeshSegmented()
         fbxeAddMeshSkin(ctx, mesh, weights.data(), num_bones, bones, bindposes);
     }
 
-    fbxeWrite(ctx, "SkinnedMeshSegmented_binary.fbx", fbxe::Format::FbxBinary);
-    fbxeWrite(ctx, "SkinnedMeshSegmented_ascii.fbx", fbxe::Format::FbxAscii);
+    fbxeWriteAsync(ctx, "SkinnedMeshSegmented_binary.fbx", fbxe::Format::FbxBinary);
+    fbxeWriteAsync(ctx, "SkinnedMeshSegmented_ascii.fbx", fbxe::Format::FbxAscii);
     fbxeReleaseContext(ctx);
 }
 RegisterTestEntry(TestFbxExportSkinnedMeshSegmented)
@@ -318,7 +318,7 @@ void TestFbxNameConflict()
     auto cnode11 = fbxeCreateNode(ctx, cnode2, "GrandChild $%&#?*@");
     auto cnode12 = fbxeCreateNode(ctx, cnode2, "GrandChild");
 
-    fbxeWrite(ctx, "namesanitize_ascii.fbx", fbxe::Format::FbxAscii);
+    fbxeWriteAsync(ctx, "namesanitize_ascii.fbx", fbxe::Format::FbxAscii);
     fbxeReleaseContext(ctx);
 }
 RegisterTestEntry(TestFbxNameConflict)

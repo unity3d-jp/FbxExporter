@@ -72,7 +72,9 @@ public:
     void clear() override;
 
     bool createScene(const char *name) override;
-    bool write(const char *path, Format format) override;
+    bool writeAsync(const char *path, Format format) override;
+    bool isFinished() override;
+    void wait() override;
 
     Node* getRootNode() override;
     Node* findNodeByName(const char *name) override;
@@ -98,12 +100,12 @@ private:
 using ContextPtr = std::shared_ptr<Context>;
 
 
-static std::vector<ContextPtr> g_contexts;
+static std::map<void*, ContextPtr> g_contexts;
 
 fbxeAPI IContext* CreateContext(const ExportOptions *opt)
 {
     auto ret = new Context(opt);
-    g_contexts.emplace_back(ret);
+    g_contexts[ret].reset(ret);
     return ret;
 }
 
@@ -127,14 +129,12 @@ Context::~Context()
 
 void Context::release()
 {
-    // don't delete here to keep proceed async tasks
+    g_contexts.erase(this);
 }
 
 void Context::clear()
 {
-    if (m_task.valid()) {
-        m_task.wait();
-    }
+    wait();
     if (m_scene) {
         m_scene->Destroy(true);
         m_scene = nullptr;
@@ -160,26 +160,39 @@ bool Context::createScene(const char *name)
     return m_scene != nullptr;
 }
 
-bool Context::write(const char *path_, Format format)
+bool Context::writeAsync(const char *path_, Format format)
 {
     if (!m_scene) { return false; }
+    wait();
 
     std::string path = path_;
     m_task = std::async(std::launch::async, [this, path, format]() {
-        for (auto& p : m_mesh_data) {
-            for (auto& task : p.second->tasks) {
-                task();
-            }
-        }
-        m_mesh_data.clear();
-
         doWrite(path.c_str(), format);
     });
     return true;
 }
 
+bool Context::isFinished()
+{
+    return m_task.valid() && m_task.wait_for(std::chrono::milliseconds(0)) != std::future_status::timeout;
+}
+
+void Context::wait()
+{
+    if (m_task.valid()) {
+        m_task.wait();
+    }
+}
+
 bool Context::doWrite(const char *path, Format format)
 {
+    for (auto& p : m_mesh_data) {
+        for (auto& task : p.second->tasks) {
+            task();
+        }
+    }
+    m_mesh_data.clear();
+
     int file_format = 0;
     {
         // search file format index

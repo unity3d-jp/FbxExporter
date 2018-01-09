@@ -77,7 +77,8 @@ namespace UTJ.FbxExporter
         [DllImport("FbxExporterCore")] static extern void fbxeReleaseContext(Context ctx);
 
         [DllImport("FbxExporterCore")] static extern bool fbxeCreateScene(Context ctx, string name);
-        [DllImport("FbxExporterCore")] static extern bool fbxeWrite(Context ctx, string path, Format format);
+        [DllImport("FbxExporterCore")] static extern bool fbxeWriteAsync(Context ctx, string path, Format format);
+        [DllImport("FbxExporterCore")] static extern bool fbxeIsFinished(Context ctx);
 
         [DllImport("FbxExporterCore")] static extern Node fbxeGetRootNode(Context ctx);
         [DllImport("FbxExporterCore")] static extern Node fbxeFindNodeByName(Context ctx, string name);

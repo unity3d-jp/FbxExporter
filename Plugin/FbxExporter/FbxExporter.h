@@ -70,7 +70,8 @@ fbxeAPI fbxe::IContext* fbxeCreateContext(const fbxe::ExportOptions *opt);
 fbxeAPI void            fbxeReleaseContext(fbxe::IContext *ctx);
 
 fbxeAPI int         fbxeCreateScene(fbxe::IContext *ctx, const char *name);
-fbxeAPI int         fbxeWrite(fbxe::IContext *ctx, const char *path, fbxe::Format format);
+fbxeAPI int         fbxeWriteAsync(fbxe::IContext *ctx, const char *path, fbxe::Format format);
+fbxeAPI int         fbxeIsFinished(fbxe::IContext *ctx);
 
 fbxeAPI fbxe::Node* fbxeGetRootNode(fbxe::IContext *ctx);
 fbxeAPI fbxe::Node* fbxeFindNodeByName(fbxe::IContext *ctx, const char *name);
