@@ -50,6 +50,8 @@ namespace UTJ.FbxExporter
             {
                 Debug.Log("Export started: " + path);
                 s_records.Add(new Record {path = path, exporter = exporter});
+                if (s_records.Count == 1)
+                    EditorApplication.update += PollAsyncWrite;
                 return true;
             }
             else
@@ -59,7 +61,7 @@ namespace UTJ.FbxExporter
             }
         }
 
-        void Update()
+        static void PollAsyncWrite()
         {
             // poll async write
             bool finished = false;
@@ -74,7 +76,11 @@ namespace UTJ.FbxExporter
                 }
             }
             if (finished)
+            {
                 s_records.RemoveAll((a) => { return a.exporter.IsFinished(); });
+                if (s_records.Count == 0)
+                    EditorApplication.update -= PollAsyncWrite;
+            }
         }
 
         void OnGUI()
