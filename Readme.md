@@ -1,6 +1,12 @@
 # FbxExporter
 [English](https://translate.google.com/translate?sl=ja&tl=en&u=https://github.com/unity3d-jp/FbxExporter)  
 
+*2018/04:
+本プラグインで実装されている機能は全て [Unity Technologies 公式の FBX Exporter](https://www.assetstore.unity3d.com/en/#!/content/101408) に実装・統合されました。
+よって、そちらの使用をおすすめします。*  
+以下は古い内容です。
+
+
 Unity の Mesh を .fbx 形式で書き出すプラグインです。  
 Skinning や BlendShape もサポートしており、四角形化の機能も備えています。
 [NormalPainter](https://github.com/unity3d-jp/NormalPainter) や [BlendShapeBuilder](https://github.com/unity3d-jp/BlendShapeBuilder) などで編集した Mesh を DCC ツールに戻す用途を想定しています。
